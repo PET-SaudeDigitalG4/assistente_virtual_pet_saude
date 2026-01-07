@@ -7,11 +7,11 @@ O que é esse serviço?
 Trata-se de um programa voltado ao acompanhamento de pessoas com diagnóstico de asma grave. O objetivo é reduzir internações e controlar os sintomas da doença. O atendimento é realizado no CEMAE, com avaliação periódica pelo médico especialista.
 
 Exigências para realizar esse serviço:
-●   Encaminhamento médico com diagnóstico de asma grave
-●   Laudos e exames médicos atualizados
-●   Documento de identidade com foto
-●   Cartão SUS
-●   Comprovante de residência atualizado
+Encaminhamento médico com diagnóstico de asma grave
+Laudos e exames médicos atualizados
+Documento de identidade com foto
+Cartão SUS
+Comprovante de residência atualizado
 
 Quem pode utilizar esse serviço?
 Pacientes com asma grave e encaminhados por profissional da rede pública de saúde.
@@ -29,9 +29,9 @@ Passo a passo:
 4.  Após inclusão, siga as orientações clínicas e participe das consultas e acompanhamentos.
 
 Canais de Atendimento:
-●   Presencialmente no CEMAE
-●   Telefone: (77) 3229-3069
-●   E-mail: pmvccemae@yahoo.com.br
+Presencialmente no CEMAE
+Telefone: (77) 3229-3069
+E-mail: pmvccemae@yahoo.com.br
 
 Outras informações:
 Local de atendimento:

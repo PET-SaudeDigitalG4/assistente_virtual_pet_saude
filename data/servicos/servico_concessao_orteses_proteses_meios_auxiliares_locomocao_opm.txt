@@ -7,12 +7,12 @@ O que é esse serviço?
 A concessão de órteses, Próteses e Meios Auxiliares de Locomoção (OPM) visa garantir mobilidade, funcionalidade e autonomia às pessoas com deficiência física. Os equipamentos são fornecidos após triagem social, avaliação clínica e encaminhamento técnico conforme protocolo do SUS.
 
 Exigências para realizar esse serviço:
-●	Documento de identidade com foto
-●	CPF
-●	Cartão SUS
-●	Comprovante de residência atualizado
-●	Encaminhamento médico com indicação do tipo de dispositivo necessário
-●	Relatório médico detalhado com justificativa clínica
+Documento de identidade com foto
+CPF
+Cartão SUS
+Comprovante de residência atualizado
+Encaminhamento médico com indicação do tipo de dispositivo necessário
+Relatório médico detalhado com justificativa clínica
 
 Quem pode utilizar esse serviço?
 Pessoas com deficiência física permanente ou temporária, residentes em Vitória da Conquista, que necessitem de órtese, prótese ou equipamento auxiliar de locomoção.
@@ -30,9 +30,9 @@ Passo a passo:
 4.	Após aprovação, o processo segue para solicitação e fornecimento do item.
 
 Canais de Atendimento:
-●	Presencialmente no CEMERF
-●	Telefone: (77) 3229-3463 (Serviço Social)
-●	E-mail: cemerf.pmvc@gmail.com
+Presencialmente no CEMERF
+Telefone: (77) 3229-3463 (Serviço Social)
+E-mail: cemerf.pmvc@gmail.com
 
 Outras informações:
 Local de atendimento:

@@ -8,18 +8,18 @@ A Oxigenoterapia Domiciliar Prolongada é indicada para pacientes com diagnósti
 
 Exigências para realizar esse serviço:
 Cópias legíveis (xerox):
-●	Identidade (RG) e CPF do paciente
-●	Cartão do SUS do paciente (frente e verso)
-●	Conta da Coelba atualizada (da residência onde o paciente reside e fará uso do oxigênio)
-●	Identidade (RG), CPF e conta da Coelba do responsável (quando aplicável)
+Identidade (RG) e CPF do paciente
+artão do SUS do paciente (frente e verso)
+Conta da Coelba atualizada (da residência onde o paciente reside e fará uso do oxigênio)
+Identidade (RG), CPF e conta da Coelba do responsável (quando aplicável)
 
 Originais obrigatórios:
-●	Relatório médico do SUS recente (com no máximo 30 dias), contendo:
-○	Diagnóstico com CID 10
-○	Fluxo de oxigênio em litros por minuto
-○	Número de horas por dia de uso
-○	Tipo de equipamento necessário
-○	Identificação do médico (nome completo, especialidade e CRM legível)
+Relatório médico do SUS recente (com no máximo 30 dias), contendo:
+Diagnóstico com CID 10
+Fluxo de oxigênio em litros por minuto
+Número de horas por dia de uso
+Tipo de equipamento necessário
+Identificação do médico (nome completo, especialidade e CRM legível)
 
 Quem pode utilizar esse serviço?
 Pacientes que apresentem condição clínica comprovada com indicação de uso domiciliar de oxigênio.
@@ -38,9 +38,9 @@ Passo a passo:
 5.	O paciente será informado sobre o andamento e a liberação do fornecimento.
 
 Canais de Atendimento:
-●	Presencialmente no CEMAE
-●	Telefone: (77) 3429-3452 / (77) 3229-3071
-●	E-mail: pmvccemae@yahoo.com.br
+Presencialmente no CEMAE
+Telefone: (77) 3429-3452 / (77) 3229-3071
+E-mail: pmvccemae@yahoo.com.br
 
 Outras informações:
 Local de atendimento:

@@ -7,12 +7,12 @@ O que é esse serviço?
 A concessão de aparelhos auditivos é realizada no CEMERF por meio de um processo que inclui cadastro com serviço social, avaliação clínica e encaminhamento para a aquisição do aparelho. O objetivo é promover a inclusão social e a melhoria da qualidade de vida das pessoas com perda auditiva.
 
 Exigências para realizar esse serviço:
-●	Documento de identidade com foto
-●	CPF
-●	Cartão SUS
-●	Comprovante de residência atualizado
-●	Relatório médico
-●	Exames audiológicos
+Documento de identidade com foto
+CPF
+Cartão SUS
+Comprovante de residência atualizado
+Relatório médico
+Exames audiológicos
 
 Quem pode utilizar esse serviço?
 Pacientes com deficiência auditiva diagnosticada e indicação para uso de aparelho auditivo.
@@ -30,9 +30,9 @@ Passo a passo:
 4.	Após a aprovação, o processo segue para solicitação, adaptação e entrega do aparelho auditivo.
 
 Canais de Atendimento:
-●	Presencialmente no CEMERF
-●	Telefone: (77) 98856-4371 (WhatsApp Serviço Social)
-●	E-mail: cemerf.pmvc@gmail.com
+Presencialmente no CEMERF
+Telefone: (77) 98856-4371 (WhatsApp Serviço Social)
+E-mail: cemerf.pmvc@gmail.com
 
 Outras informações:
 Local de atendimento:

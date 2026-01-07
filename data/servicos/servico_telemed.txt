@@ -6,11 +6,11 @@ O que é esse serviço?
 A Telemedicina permite que o paciente seja atendido por um médico especialista de forma remota, com o apoio de um profissional presente no CEMAE ou de sua própria casa. Essa modalidade amplia o acesso a especialidades médicas, reduzindo filas e otimizando os recursos da rede pública de saúde.
 
 Exigências para realizar esse serviço:
-●	Encaminhamento médico com solicitação para especialidade atendida por telemedicina
-●	O paciente precisa ser cadastrado pela unidade de saúde na plataforma da telemedicina
-●	Documento de identidade com foto
-●	Cartão SUS
-●	Comprovante de residência atualizado
+Encaminhamento médico com solicitação para especialidade atendida por telemedicina
+O paciente precisa ser cadastrado pela unidade de saúde na plataforma da telemedicina
+Documento de identidade com foto
+Cartão SUS
+Comprovante de residência atualizado
 
 Quem pode utilizar esse serviço?
 Pacientes cadastrados na plataforma da telemedicina com encaminhamento para consulta especializada por telemedicina, conforme disponibilidade da regulação municipal.
@@ -28,9 +28,9 @@ Passo a passo:
 4.	Para o atendimento agendado no CEMAE, compareça no dia e horário marcado, onde será acompanhado por um profissional da equipe local durante a consulta remota.
 
 Canais de Atendimento:
-●	Presencialmente na Central de Marcação de Exames
-●	Telefone: (77) Telefone: (77) 3229-3069
-●	E-mail: pmvccemae@yahoo.com.br
+Presencialmente na Central de Marcação de Exames
+Telefone: (77) Telefone: (77) 3229-3069
+E-mail: pmvccemae@yahoo.com.br
 
 Outras informações:
 Local de realização da consulta:

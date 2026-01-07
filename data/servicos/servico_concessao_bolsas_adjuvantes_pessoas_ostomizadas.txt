@@ -6,11 +6,11 @@ O que é esse serviço?
 É a concessão de bolsas coletoras e outros itens de cuidado para pessoas com ostomias (colostomia, ileostomia, urostomia), garantindo mais conforto, segurança e qualidade de vida. O serviço realiza avaliação da necessidade do paciente e regularidade na dispensação dos insumos.
 
 Exigências para realizar esse serviço:
-●	Documento de identidade com foto
-●	CPF
-●	Cartão SUS
-●	Comprovante de residência atualizado
-●	Relatório médico com indicação e prescrição
+Documento de identidade com foto
+CPF
+Cartão SUS
+Comprovante de residência atualizado
+Relatório médico com indicação e prescrição
 
 Quem pode utilizar esse serviço?
 Pacientes com ostomias permanentes ou temporárias, com indicação clínica para uso de bolsas e insumos específicos.

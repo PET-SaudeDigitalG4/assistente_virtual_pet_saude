@@ -7,12 +7,12 @@ O que é esse serviço?
 O CEMERF disponibiliza atendimentos especializados, com equipe multiprofissional. O acesso ao serviço é realizado mediante atendimento no serviço social, avaliação clínica e definição do plano terapêutico individualizado, conforme protocolo do SUS.
 
 Exigências para realizar esse serviço:
-●	Documento de identidade com foto
-●	CPF
-●	Cartão SUS
-●	Comprovante de residência atualizado
-●	Encaminhamento médico com indicação para reabilitação (física e/ou auditiva)
-●	Exames recentes (se houver)
+Documento de identidade com foto
+CPF
+Cartão SUS
+Comprovante de residência atualizado
+Encaminhamento médico com indicação para reabilitação (física e/ou auditiva)
+Exames recentes (se houver)
 
 Quem pode utilizar esse serviço?
 Pacientes com deficiência física e/ou auditiva, residentes em Vitória da Conquista e dos municípios pactuados, que compõem a macrorregião de saúde.
@@ -31,9 +31,9 @@ Passo a passo:
 5.	Inicie os atendimentos conforme prescrição da equipe técnica.
 
 Canais de Atendimento:
-●	Presencialmente no CEMERF
-●	Telefone: (77) 3229-3452
-●	E-mail: cemerf.pmvc@gmail.com
+Presencialmente no CEMERF
+Telefone: (77) 3229-3452
+E-mail: cemerf.pmvc@gmail.com
 
 Outras informações:
 Local de atendimento:
