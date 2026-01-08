@@ -1,4 +1,5 @@
- Serviço: TELEMED: Telemedicina 
+Serviço: Telemedicina 
+
 Resumo:
 Este serviço oferece acesso a consultas especializadas de forma on-line, facilitando o atendimento de pacientes que necessitam de avaliação com profissionais de várias especialidades, reduzindo assim a fila de espera nas unidades de saúde. 
 
