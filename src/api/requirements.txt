@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+sqlalchemy
+sqlalchemy_utils
+passlib[bcrypt]
+python-jose[cryptography]
+python-dotenv
+python-multipart
+alembic
+bcrypt==4.0.1
+pydantic
+jose
+psycopg2-binary
+fastapi
+twilio
