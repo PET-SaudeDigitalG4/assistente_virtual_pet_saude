@@ -11,11 +11,11 @@ print("PYTHONPATH:", sys.path[:3])
 
 from app.main import setup_system
 import gradio as gr
-from app.core.conversation import responder
+from app.core.conversation import generate_response
 retrievers = setup_system()
 
 def chat_fn(mensagem, historico):
-    return responder(mensagem, historico, retrievers)
+    return generate_response(mensagem, historico, retrievers)
 
 interface = gr.ChatInterface(fn=chat_fn)
 interface.launch()
