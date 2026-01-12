@@ -1,4 +1,4 @@
-from models import User, Chat, Message
+from models.models import User, Chat, Message
 from services.nlp_service import NLPService
 
 class ChatService:

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from schemas import MessageSchema, MessageOut
-from dependencies import get_session
+from schemas.schemas import MessageSchema, MessageOut
+from dependencies.dependencies import get_session
 from services.chat_service import ChatService
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
