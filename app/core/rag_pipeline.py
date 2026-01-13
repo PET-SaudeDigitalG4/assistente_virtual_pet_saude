@@ -7,13 +7,23 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 
 from app.adapters.prompts import prompt
 
+MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"
+# MODEL_NAME = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+# MODEL_NAME = "HuggingFaceH4/zephyr-7b-beta"
 
-def get_llm(model_name: str = "HuggingFaceH4/zephyr-7b-beta") -> HuggingFacePipeline:
+CACHED_LLM = None
+
+def get_llm() -> HuggingFacePipeline:
+    global CACHED_LLM
+    
+    if CACHED_LLM is not None:
+        return CACHED_LLM
    
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    
     model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        torch_dtype="auto",
+        MODEL_NAME,
+        dtype="auto",
         device_map="auto"     
     )
 
@@ -21,20 +31,21 @@ def get_llm(model_name: str = "HuggingFaceH4/zephyr-7b-beta") -> HuggingFacePipe
         task="text-generation",
         model=model,
         tokenizer=tokenizer,
-        max_new_tokens=512,
-        do_sample=False,
-        temperature=0.0,
+        max_new_tokens=256,          
+        do_sample=True,
+        temperature=0.05,            
+        repetition_penalty=1.2,      
+        no_repeat_ngram_size=3,     
+        return_full_text=False
     )
+    
+    CACHED_LLM = HuggingFacePipeline(pipeline=pipe)
 
-    return HuggingFacePipeline(pipeline=pipe)
+    return CACHED_LLM
 
 
-def build_rag_chain(retriever: BaseRetriever, model_name: str = "mistralai/Mistral-7B-Instruct-v0.2") -> Runnable:
-    """
-    Constrói a chain RAG usando HuggingFacePipeline:
-      pergunta -> retrieval -> prompt -> LLM open-source.
-    """
-    llm = get_llm(model_name)
+def build_rag_chain(retriever: BaseRetriever) -> Runnable:
+    llm = get_llm()
 
     chain = (
         {
@@ -47,24 +58,17 @@ def build_rag_chain(retriever: BaseRetriever, model_name: str = "mistralai/Mistr
 
     return chain
 
-
-def run_rag(retriever: BaseRetriever, pergunta: str, model_name: str = "mistralai/Mistral-7B-Instruct-v0.2") -> str:
-    """
-    Executa a chain RAG usando modelo open-source do Hugging Face.
-    Retorna apenas o texto final.
-    """
+def run_rag(retriever: BaseRetriever, pergunta: str) -> str:
     if not pergunta or not pergunta.strip():
-        raise ValueError("A pergunta não pode estar vazia.")
+        return "Digite uma pergunta válida."
 
-    chain = build_rag_chain(retriever, model_name=model_name)
-
+    chain = build_rag_chain(retriever)
+    
     resultado = chain.invoke(pergunta)
 
-    # HuggingFacePipeline retorna string diretamente
     if isinstance(resultado, str):
         return resultado
-
-    # fallback para casos atípicos
+    
     if hasattr(resultado, "content"):
         return resultado.content
 
