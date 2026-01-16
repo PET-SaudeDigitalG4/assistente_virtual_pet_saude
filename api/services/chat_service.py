@@ -1,23 +1,47 @@
 from api.models.models import User, Chat, Message
 from api.services.nlp_service import NLPService
+from api.utils.logger import DbLogger
+from api.services.config_service import ConfigService
 
 class ChatService:
     def __init__(self, db, nlp_service: NLPService):
         self.db = db
         self.nlp = nlp_service
+        self.config_service = ConfigService(db)
 
     async def process_message(self, id_wpp: str, text: str) -> str:
-        user = self._get_or_create_user(id_wpp)
-        chat = self._get_or_create_chat(user)
+        try:
+            user = self._get_or_create_user(id_wpp)
+            chat = self._get_or_create_chat(user)
+            
+            DbLogger.log_event(
+                self.db, "INFO", "MESSAGE_RECEIVED", 
+                f"Mensagem recebida de {id_wpp}", 
+                user_id=user.id
+            )
+            
+            msg_user = self._save_message(chat, text, "user")
 
-        msg_user = self._save_message(chat, text, "user")
+            maintenance_mode = self.config_service.get_config("maintenance_mode", "false")
+            
+            if maintenance_mode == "true":
+                response_text = "O Chat Bot está em manuntenção no momento."
+            else:
+                response_text = await self.nlp.process(text)
 
-        response_text = await self.nlp.process(text)
+            msg_bot = self._save_message(chat, response_text, "bot")
 
-        msg_bot = self._save_message(chat, response_text, "bot")
-
-        self.db.commit()
-        return response_text
+            self.db.commit()
+            return response_text
+        
+        except Exception as e:
+            DbLogger.log_event(
+                self.db, "ERROR", "PROCESSING_ERROR", 
+                f"Erro ao processar mensagem: {str(e)}", 
+                user_id=user.id if 'user' in locals() else None,
+                meta={"stack_trace": str(e)}
+            )
+            return "Desculpe, ocorreu um erro interno."
 
     def send_message(self, id_wpp: str, text: str) -> str:
         user = self._get_or_create_user(id_wpp)
