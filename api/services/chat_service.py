@@ -53,3 +53,5 @@ class ChatService:
         self.db.add(message)
         self.db.flush()
         return message
+
+        
