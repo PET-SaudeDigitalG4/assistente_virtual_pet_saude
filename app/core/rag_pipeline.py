@@ -1,48 +1,46 @@
+import os
 from typing import Any
+from dotenv import load_dotenv
 from langchain_core.runnables import Runnable, RunnablePassthrough
 from langchain_core.retrievers import BaseRetriever
+from langchain_core.output_parsers import StrOutputParser 
+from langchain_groq import ChatGroq 
+from app.adapters.prompts import *
 
-from langchain_huggingface import HuggingFacePipeline
-from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+load_dotenv()
 
-from app.adapters.prompts import prompt
-
-MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"
-# MODEL_NAME = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-# MODEL_NAME = "HuggingFaceH4/zephyr-7b-beta"
+MODEL_NAME = "llama-3.3-70b-versatile" 
 
 CACHED_LLM = None
 
-def get_llm() -> HuggingFacePipeline:
+def get_llm() -> ChatGroq:
     global CACHED_LLM
     
     if CACHED_LLM is not None:
         return CACHED_LLM
-   
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
     
-    model = AutoModelForCausalLM.from_pretrained(
-        MODEL_NAME,
-        dtype="auto",
-        device_map="auto"     
-    )
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("A chave da API Groq não foi encontrada. Defina a variável de ambiente GROQ_API_KEY.")
 
-    pipe = pipeline(
-        task="text-generation",
-        model=model,
-        tokenizer=tokenizer,
-        max_new_tokens=256,          
-        do_sample=True,
-        temperature=0.05,            
-        repetition_penalty=1.2,      
-        no_repeat_ngram_size=3,     
-        return_full_text=False
+    llm = ChatGroq(
+        model=MODEL_NAME,
+        temperature=0.1, 
+        max_tokens=500,
+        api_key=api_key
     )
     
-    CACHED_LLM = HuggingFacePipeline(pipeline=pipe)
-
+    CACHED_LLM = llm
     return CACHED_LLM
 
+def classify_input(llm, text: str) -> str:
+    chain = intent_prompt | llm | StrOutputParser()
+    result = chain.invoke({"input": text})
+    return result.strip().lower()
+
+def greeting_response(llm) -> str:
+    chain = greeting_prompt | llm | StrOutputParser()
+    return chain.invoke({}).strip()
 
 def build_rag_chain(retriever: BaseRetriever) -> Runnable:
     llm = get_llm()
@@ -52,24 +50,24 @@ def build_rag_chain(retriever: BaseRetriever) -> Runnable:
             "context": retriever,
             "question": RunnablePassthrough(),
         }
-        | prompt
+        | rag_prompt
         | llm
+        | StrOutputParser() 
     )
 
     return chain
 
-def run_rag(retriever: BaseRetriever, pergunta: str) -> str:
-    if not pergunta or not pergunta.strip():
+def run_rag(retriever: BaseRetriever, question: str) -> str:
+    if not question or not question.strip():
         return "Digite uma pergunta válida."
 
+    llm = get_llm()
+    
+    intent = classify_input(llm, question)
+
+    if "greeting" in intent: 
+        return greeting_response(llm)
+
     chain = build_rag_chain(retriever)
-    
-    resultado = chain.invoke(pergunta)
 
-    if isinstance(resultado, str):
-        return resultado
-    
-    if hasattr(resultado, "content"):
-        return resultado.content
-
-    return str(resultado)
+    return chain.invoke(question)

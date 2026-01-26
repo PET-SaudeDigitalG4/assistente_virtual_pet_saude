@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, JSON, Text, Boolean, ForeignKey
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime, timezone
 
@@ -33,3 +33,23 @@ class Message(Base):
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
     chat = relationship("Chat", back_populates="messages")
+
+class SystemConfig(Base):
+    __tablename__ = "system_configs"
+
+    key = Column(String, primary_key=True, index=True) 
+    value = Column(String, nullable=False)           
+    description = Column(String, nullable=True)       
+    is_active = Column(Boolean, default=True)
+    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True) 
+    level = Column(String, nullable=False) 
+    event_type = Column(String, nullable=False) 
+    message = Column(Text, nullable=False) 
+    metadata_info = Column(JSON, nullable=True) 
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))

@@ -2,6 +2,7 @@ langchain
 langchain-community
 langchain-core
 langchain-openai
+langchain_groq
 faiss-cpu
 python-dotenv
 gradio
