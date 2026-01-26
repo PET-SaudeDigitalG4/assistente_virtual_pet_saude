@@ -10,5 +10,5 @@ class NLPService:
 
         return run_rag(
             retriever=self.retriever,
-            pergunta=text
+            question=text
         )
