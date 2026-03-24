@@ -3,6 +3,7 @@ from api.services.nlp_service import NLPService
 from api.utils.logger import DbLogger
 from api.services.config_service import ConfigService
 
+
 class ChatService:
     def __init__(self, db, nlp_service: NLPService):
         self.db = db
@@ -11,52 +12,118 @@ class ChatService:
 
     async def process_message(self, id_wpp: str, text: str) -> str:
         try:
+            text = (text or "").strip()
+
+            if not text:
+                return "Não entendi sua mensagem. Pode repetir?"
+
+            clean_text = self._clean_text(text)
+
             user = self._get_or_create_user(id_wpp)
             chat = self._get_or_create_chat(user)
-            
+
+            print("STATE ANTES:", user.state)
+
             DbLogger.log_event(
-                self.db, "INFO", "MESSAGE_RECEIVED", 
-                f"Mensagem recebida de {id_wpp}", 
+                self.db,
+                "INFO",
+                "MESSAGE_RECEIVED",
+                f"Mensagem recebida de {id_wpp}",
                 user_id=user.id
             )
-            
-            msg_user = self._save_message(chat, text, "user")
 
-            maintenance_mode = self.config_service.get_config("maintenance_mode", "false")
-            
-            if maintenance_mode == "true":
-                response_text = "O Chat Bot está em manuntenção no momento."
+            self._save_message(chat, text, "user")
+
+            if clean_text.lower() == "/resetar":
+                user.state = "NEW"
+                user.name = None
+                self.db.commit()
+                return "Conversa reiniciada!\nMande um 'Oi' para começar."
+
+            if not user.state:
+                user.state = "NEW"
+
+            if user.state == "NEW":
+                user.state = "WAITING_NAME"
+
+                response_text = (
+                    "Olá! Sou o assistente virtual da Secretaria Municipal de Saúde.\n"
+                    "Para continuar, digite apenas o seu nome:"
+                )
+
+            elif user.state == "WAITING_NAME":
+                nome = self._extract_name(clean_text)
+
+                print("NOME EXTRAÍDO:", nome)
+
+                if len(nome) < 2:
+                    response_text = "Digite um nome válido."
+                elif len(nome) > 30:
+                    response_text = "Nome muito longo. Digite apenas seu primeiro nome."
+                elif any(char.isdigit() for char in nome):
+                    response_text = "O nome não deve conter números."
+                elif len(nome.split()) > 3:
+                    response_text = "Digite apenas seu primeiro nome."
+                else:
+                    user.name = nome
+                    user.state = "ACTIVE"
+
+                    response_text = (
+                        f"Prazer, {user.name}! 😊\n"
+                        "Como posso te ajudar hoje?"
+                    )
+
             else:
-                response_text = await self.nlp.process(text)
+                maintenance_mode = self.config_service.get_config("maintenance_mode", "false")
 
-            msg_bot = self._save_message(chat, response_text, "bot")
+                if maintenance_mode == "true":
+                    response_text = "O Chat Bot está em manutenção."
+                else:
+                    try:
+                        response_text = self.nlp.process(clean_text)
+
+                        if not response_text:
+                            response_text = "Não consegui entender. Pode reformular?"
+
+                    except Exception as nlp_error:
+                        print("erro do NLP:", str(nlp_error))
+                        response_text = "Erro ao processar sua mensagem."
+
+            self._save_message(chat, response_text, "bot")
 
             self.db.commit()
-            return response_text
-        
+
+            return str(response_text)
+
         except Exception as e:
-            DbLogger.log_event(
-                self.db, "ERROR", "PROCESSING_ERROR", 
-                f"Erro ao processar mensagem: {str(e)}", 
-                user_id=user.id if 'user' in locals() else None,
-                meta={"stack_trace": str(e)}
-            )
+            self.db.rollback()
+            print("ERRO REAL:", str(e))
             return "Desculpe, ocorreu um erro interno."
 
-    def send_message(self, id_wpp: str, text: str) -> str:
-        user = self._get_or_create_user(id_wpp)
-        chat = self._get_or_create_chat(user)
+    def _clean_text(self, text: str) -> str:
+        if ":" in text:
+            text = text.split(":")[-1]
+        return " ".join(text.strip().split())
 
-        self._save_message(chat, text, "system_push")
 
-        self.db.commit()
-        return "Mensagem enviada com sucesso"
+    def _extract_name(self, text: str) -> str:
+        nome = text
+
+        if ":" in nome:
+            nome = nome.split(":")[-1]
+
+        nome = nome.strip()
+
+        nome = " ".join(nome.split())
+
+        return nome
 
     def _get_or_create_user(self, id_wpp: str) -> User:
         user = self.db.query(User).filter(User.id_wpp == id_wpp).first()
 
         if not user:
-            user = User(id_wpp=id_wpp)
+            print("novo user")
+            user = User(id_wpp=id_wpp, state="NEW")
             self.db.add(user)
             self.db.flush()
 
@@ -66,6 +133,7 @@ class ChatService:
         chat = self.db.query(Chat).filter(Chat.user_id == user.id).first()
 
         if not chat:
+            print("NOVO CHAT")
             chat = Chat(user=user)
             self.db.add(chat)
             self.db.flush()
@@ -73,9 +141,7 @@ class ChatService:
         return chat
 
     def _save_message(self, chat: Chat, text: str, sender: str) -> Message:
-        message = Message(chat=chat, text=text, sender=sender)
+        message = Message(chat=chat, text=str(text), sender=sender)
         self.db.add(message)
         self.db.flush()
         return message
-
-        

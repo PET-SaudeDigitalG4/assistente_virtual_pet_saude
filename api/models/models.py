@@ -9,6 +9,8 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     id_wpp = Column(String, unique=True, nullable=False)
+    name = Column(String, nullable=True)
+    state = Column(String, default="NEW") 
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
     chats = relationship("Chat", back_populates="user", cascade="all, delete-orphan")
