@@ -12,6 +12,7 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
     chats = relationship("Chat", back_populates="user", cascade="all, delete-orphan")
+    attachments = relationship("Attachment", back_populates="user", cascade="all, delete-orphan")
 
 class Chat(Base):
     __tablename__ = "chats"
@@ -22,6 +23,7 @@ class Chat(Base):
 
     user = relationship("User", back_populates="chats")
     messages = relationship("Message", back_populates="chat")
+    attachments = relationship("Attachment", back_populates="chat", cascade="all, delete-orphan")
 
 class Message(Base):
     __tablename__ = "messages"
@@ -33,6 +35,28 @@ class Message(Base):
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
     chat = relationship("Chat", back_populates="messages")
+    attachments = relationship("Attachment", back_populates="message")
+
+
+class Attachment(Base):
+    __tablename__ = "attachments"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    chat_id = Column(Integer, ForeignKey("chats.id"), nullable=False)
+    message_id = Column(Integer, ForeignKey("messages.id"), nullable=True)
+    original_filename = Column(String, nullable=False)
+    stored_filename = Column(String, nullable=False)
+    storage_path = Column(String, nullable=False)
+    mime_type = Column(String, nullable=False)
+    file_size = Column(Integer, nullable=False)
+    category = Column(String, nullable=False, default="outro")
+    status = Column(String, nullable=False, default="recebido")
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="attachments")
+    chat = relationship("Chat", back_populates="attachments")
+    message = relationship("Message", back_populates="attachments")
 
 class SystemConfig(Base):
     __tablename__ = "system_configs"
