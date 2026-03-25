@@ -36,24 +36,34 @@ class ChatService:
 
             if clean_text.lower() == "/resetar":
                 user.state = "NEW"
-                user.name = None
                 self.db.commit()
-                return "Conversa reiniciada!\nMande um 'Oi' para começar."
+                return "Conversa reiniciada!\nEnvie uma mensagem para começar."
 
             if not user.state:
                 user.state = "NEW"
 
-            if user.state == "NEW":
-                user.state = "WAITING_NAME"
+            comandos_menu = ["0", "menu", "/menu"]
 
-                response_text = (
-                    "Olá! Sou o assistente virtual da Secretaria Municipal de Saúde.\n"
-                    "Para continuar, digite apenas o seu nome:"
-                )
+            if clean_text.lower() in comandos_menu:
+                user.state = "WAITING_MAIN_MENU_CHOICE"
+                response_text = f"Voltando ao menu principal...\n\n{TEXTS['MAIN_MENU_TEXT']}"
+
+            elif user.state == "NEW":
+                if user.name:
+                    user.state = "WAITING_MAIN_MENU_CHOICE"
+                    rag_response = self.nlp.process(clean_text, user_name=user.name)
+                    if not rag_response:
+                        rag_response = f"Oi, {user.name}!" 
+                    response_text = f"{rag_response}\n\n{TEXTS['MAIN_MENU_TEXT']}"
+                else:
+                    user.state = "WAITING_NAME"
+                    response_text = (
+                        "Olá! Sou o assistente virtual da Secretaria Municipal de Saúde.\n"
+                        "Para continuar, digite apenas o seu nome:"
+                    )
 
             elif user.state == "WAITING_NAME":
                 nome = self._extract_name(clean_text)
-
                 print("NOME EXTRAÍDO:", nome)
 
                 if len(nome) < 2:
@@ -67,7 +77,7 @@ class ChatService:
                 else:
                     user.name = nome
                     user.state = "WAITING_MAIN_MENU_CHOICE"
-
+                    
                     response_text = (
                         f"Prazer, {user.name}! 😊\n"
                         "Como posso te ajudar hoje?\n\n"
@@ -76,7 +86,6 @@ class ChatService:
 
             elif user.state in MENU_ROUTER:
                 current_menu_option, current_menu_text = MENU_ROUTER[user.state]
-                
                 handler_function = current_menu_option.get(clean_text)
 
                 if handler_function:
@@ -85,33 +94,44 @@ class ChatService:
                     except TypeError:
                         response_text = handler_function(user, self.db)
                 else:
-                    response_text = f"Opção inválida. Por favor, escolha um número válido:\n\n{current_menu_text}"
+                    if clean_text.isdigit():
+                        response_text = f"Opção inválida. Por favor, digite um número válido:\n\n{current_menu_text}"
+                    else:
+                        maintenance_mode = self.config_service.get_config("maintenance_mode", "false")
+                        if maintenance_mode == "true":
+                            response_text = "O Chat Bot está em manutenção."
+                        else:
+                            try:
+                                rag_response = self.nlp.process(clean_text, user_name=user.name)
+                                rag_lower = (rag_response or "").lower()
+                                
+                            
+                                if not rag_response or "não" in rag_lower or "desculpe" in rag_lower or "sinto muito" in rag_lower:
+                                    response_text = f"Opção inválida. Por favor, digite um número válido:\n\n{current_menu_text}"
+                                else:
+                                    response_text = f"{rag_response}\n\n{current_menu_text}"
+                                    
+                            except Exception as nlp_error:
+                                print("erro do NLP:", str(nlp_error))
+                                response_text = "Erro ao processar sua mensagem."
 
-            elif clean_text == "0" or clean_text.lower() == "/menu":
-                user.state = "WAITING_MAIN_MENU_CHOICE"
-                response_text = f"Voltando ao início...\n\n{TEXTS['MAIN_MENU_TEXT']}"
-            
             elif user.state.endswith("_FLOW") and clean_text.isdigit() and len(clean_text) == 1:
                 response_text = "Você está em um atendimento específico. Digite sua pergunta para mim ou envie *0* para voltar ao menu."
 
             else:
                 maintenance_mode = self.config_service.get_config("maintenance_mode", "false")
-
                 if maintenance_mode == "true":
                     response_text = "O Chat Bot está em manutenção."
                 else:
                     try:
-                        response_text = self.nlp.process(clean_text)
-
+                        response_text = self.nlp.process(clean_text, user_name=user.name)
                         if not response_text:
                             response_text = "Não consegui entender. Pode reformular?"
-
                     except Exception as nlp_error:
                         print("erro do NLP:", str(nlp_error))
                         response_text = "Erro ao processar sua mensagem."
 
             self._save_message(chat, response_text, "bot")
-
             self.db.commit()
 
             return str(response_text)
@@ -126,39 +146,28 @@ class ChatService:
             text = text.split(":")[-1]
         return " ".join(text.strip().split())
 
-
     def _extract_name(self, text: str) -> str:
         nome = text
-
         if ":" in nome:
             nome = nome.split(":")[-1]
-
         nome = nome.strip()
-
         nome = " ".join(nome.split())
-
         return nome
 
     def _get_or_create_user(self, id_wpp: str) -> User:
         user = self.db.query(User).filter(User.id_wpp == id_wpp).first()
-
         if not user:
-            print("novo user")
             user = User(id_wpp=id_wpp, state="NEW")
             self.db.add(user)
             self.db.flush()
-
         return user
 
     def _get_or_create_chat(self, user: User) -> Chat:
         chat = self.db.query(Chat).filter(Chat.user_id == user.id).first()
-
         if not chat:
-            print("NOVO CHAT")
             chat = Chat(user=user)
             self.db.add(chat)
             self.db.flush()
-
         return chat
 
     def _save_message(self, chat: Chat, text: str, sender: str) -> Message:
