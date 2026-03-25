@@ -2,7 +2,7 @@ from api.models.models import User, Chat, Message
 from api.services.nlp_service import NLPService
 from api.utils.logger import DbLogger
 from api.services.config_service import ConfigService
-
+from api.services.menu_handlers import MENU_ROUTER, TEXTS
 
 class ChatService:
     def __init__(self, db, nlp_service: NLPService):
@@ -66,12 +66,33 @@ class ChatService:
                     response_text = "Digite apenas seu primeiro nome."
                 else:
                     user.name = nome
-                    user.state = "ACTIVE"
+                    user.state = "WAITING_MAIN_MENU_CHOICE"
 
                     response_text = (
                         f"Prazer, {user.name}! 😊\n"
-                        "Como posso te ajudar hoje?"
+                        "Como posso te ajudar hoje?\n\n"
+                        f"{TEXTS['MAIN_MENU_TEXT']}"
                     )
+
+            elif user.state in MENU_ROUTER:
+                current_menu_option, current_menu_text = MENU_ROUTER[user.state]
+                
+                handler_function = current_menu_option.get(clean_text)
+
+                if handler_function:
+                    try:
+                        response_text = handler_function(user, self.db, self.nlp)
+                    except TypeError:
+                        response_text = handler_function(user, self.db)
+                else:
+                    response_text = f"Opção inválida. Por favor, escolha um número válido:\n\n{current_menu_text}"
+
+            elif clean_text == "0" or clean_text.lower() == "/menu":
+                user.state = "WAITING_MAIN_MENU_CHOICE"
+                response_text = f"Voltando ao início...\n\n{TEXTS['MAIN_MENU_TEXT']}"
+            
+            elif user.state.endswith("_FLOW") and clean_text.isdigit() and len(clean_text) == 1:
+                response_text = "Você está em um atendimento específico. Digite sua pergunta para mim ou envie *0* para voltar ao menu."
 
             else:
                 maintenance_mode = self.config_service.get_config("maintenance_mode", "false")
