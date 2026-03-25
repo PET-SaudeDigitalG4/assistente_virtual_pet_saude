@@ -1,0 +1,22 @@
+{
+  "MAIN_MENU_TEXT": "(Escolha uma das opções abaixo)\n\n1️⃣ - Triagem para Agendamento\n2️⃣ - Farmácia Popular\n3️⃣ - Vacinação e Insumos\n4️⃣ - Serviços Disponíveis na Rede\n\nDigite apenas o número da opção desejada:",
+  
+  "FARMACIA_MENU_TEXT": "💊 *FARMÁCIA POPULAR*\n\n1️⃣ - Onde encontrar remédios do SUS?\n2️⃣ - Farmácias de rede com Farmácia Popular\n3️⃣ - Orientações (Idade limite, Documentos)\n0️⃣ - Voltar ao menu principal\n\nDigite a opção:",
+  
+  "VACINACAO_MENU_TEXT": "💉 *VACINAÇÃO E INSUMOS*\n\n1️⃣ - Calendário do adulto\n2️⃣ - Lancetas e insumos\n3️⃣ - Protocolo da SESAB\n4️⃣ - Componentes especializados (Idosos)\n0️⃣ - Voltar ao menu principal\n\nDigite a opção:",
+  
+  "SERVICOS_REDE_MENU_TEXT": "🏥 *SERVIÇOS DISPONÍVEIS NA REDE*\n\n1️⃣ - Onde fica o CEMAE?\n2️⃣ - Onde fica o CEMERF?\n3️⃣ - Quem pode acessar?\n0️⃣ - Voltar ao menu principal\n\nDigite a opção:",
+
+  "QUERIES_RAG": {
+    "REMEDIOS": "Onde encontrar remédios do SUS?",
+    "FARM_POPULAR": "Farmácias de rede com Farmácia Popular",
+    "ORIENTACOES": "Orientações da Farmácia Popular (Idade limite, Documentos)",
+    "CALENDARIO": "Calendário de vacinação do adulto",
+    "INSUMOS": "Lancetas e insumos", 
+    "PROTOCOLO": "Protocolo da SESAB",
+    "COMP_ESPECIALIZADOS": "Componentes especializados (Idosos)",
+    "CEMAE": "Onde fica o CEMAE em Vitória da Conquista e qual o horário de funcionamento?",
+    "CEMERF": "Onde fica o CEMERF em Vitória da Conquista e qual o horário de funcionamento?",
+    "ACESSO_SERVICOS": "Quem pode acessar os serviços da rede de saúde como CEMAE e CEMERF e quais os requisitos?"
+  }
+}
