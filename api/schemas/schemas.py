@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel
 
 class MessageSchema(BaseModel):
@@ -6,3 +8,4 @@ class MessageSchema(BaseModel):
 
 class MessageOut(BaseModel):
     response: str
+    image_url: Optional[str] = None

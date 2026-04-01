@@ -45,6 +45,18 @@ class SystemConfig(Base):
     is_active = Column(Boolean, default=True)
     updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
+
+class FlowMedia(Base):
+    __tablename__ = "flow_media"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    flow_key = Column(String, nullable=False, index=True)
+    media_type = Column(String, nullable=False, default="image")
+    media_url = Column(Text, nullable=False)
+    caption = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True)
+    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 

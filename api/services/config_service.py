@@ -29,3 +29,7 @@ class ConfigService:
         
         self.db.commit()
         return config
+
+    def get_flow_image_url(self, flow_key: str, default: str = None) -> str:
+        config_key = f"flow_image.{flow_key.lower()}"
+        return self.get_config(config_key, default)

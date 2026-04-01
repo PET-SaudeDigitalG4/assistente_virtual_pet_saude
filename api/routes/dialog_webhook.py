@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from api.services.chat_service import ChatService
 from api.db.database import get_db
+from api.services.chat_service import ChatService
 
 router = APIRouter()
+
 
 @router.post("/dialogflow_webhook")
 async def dialogflow_webhook(request: Request, db: Session = Depends(get_db)):
@@ -22,16 +23,27 @@ async def dialogflow_webhook(request: Request, db: Session = Depends(get_db)):
 
         resposta = await chat_service.process_message(id_wpp, user_text)
 
+        fulfillment_messages = [
+            {
+                "text": {
+                    "text": [resposta.text]
+                }
+            }
+        ]
+
+        if resposta.image_url:
+            fulfillment_messages.append(
+                {
+                    "image": {
+                        "imageUri": resposta.image_url
+                    }
+                }
+            )
+
         return JSONResponse(
             content={
-                "fulfillmentText": resposta,
-                "fulfillmentMessages": [
-                    {
-                        "text": {
-                            "text": [resposta]
-                        }
-                    }
-                ]
+                "fulfillmentText": resposta.text,
+                "fulfillmentMessages": fulfillment_messages,
             }
         )
 
@@ -46,6 +58,6 @@ async def dialogflow_webhook(request: Request, db: Session = Depends(get_db)):
                             "text": ["Erro interno no servidor."]
                         }
                     }
-                ]
+                ],
             }
         )

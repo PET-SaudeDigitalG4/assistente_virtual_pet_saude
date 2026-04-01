@@ -17,4 +17,4 @@ async def receive_message(
     service = ChatService(db, nlp_service)
     response = await service.process_message(payload.id_wpp, payload.text)
 
-    return MessageOut(response=response)
+    return MessageOut(response=response.text, image_url=response.image_url)
