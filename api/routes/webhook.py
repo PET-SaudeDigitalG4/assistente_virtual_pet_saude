@@ -34,10 +34,7 @@ def send_image(number: str, image_url: str, caption: str = ""):
         "media": image_url,
         "caption": caption
     }
-    
-    print(f"\n[🔄 EVOLUTION API] Tentando enviar imagem para {number}...")
-    print(f"URL da Imagem: {image_url}")
-    
+      
     try:
         response = requests.post(
             url,
@@ -46,18 +43,11 @@ def send_image(number: str, image_url: str, caption: str = ""):
                 "Content-Type": "application/json"
             },
             json=payload,
-            timeout=15 # Evita que a requisição trave o seu servidor se a API demorar
+            timeout=15 
         )
-        
-        # Mostra no seu terminal se o envio deu certo ou o erro exato
-        if response.status_code == 200 or response.status_code == 201:
-            print("[✅ SUCESSO] Imagem enviada para o WhatsApp!")
-        else:
-            print(f"[❌ ERRO EVOLUTION] Status: {response.status_code}")
-            print(f"Detalhes do erro: {response.text}")
             
     except Exception as e:
-        print(f"[❌ ERRO INTERNO] Falha na requisição para a Evolution API: {str(e)}")
+        print(f"Falha na requisição: {str(e)}")
         
 @router.post("/evolution_webhook")
 async def evolution_webhook(request: Request, db: Session = Depends(get_db)):
@@ -96,5 +86,5 @@ async def evolution_webhook(request: Request, db: Session = Depends(get_db)):
         return JSONResponse(content={"status": "success"})
 
     except Exception as e:
-        print("ERRO WEBHOOK:", str(e))
+        print("ERRO:", str(e))
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
