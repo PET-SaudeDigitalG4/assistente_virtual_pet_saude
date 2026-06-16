@@ -1,3 +1,4 @@
+import requests
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -7,57 +8,93 @@ from api.services.chat_service import ChatService
 
 router = APIRouter()
 
+EVOLUTION_URL = "http://localhost:8080" 
+INSTANCE = "meu-wpp"                  
+API_KEY = "masterkey"                 
 
-@router.post("/dialogflow_webhook")
-async def dialogflow_webhook(request: Request, db: Session = Depends(get_db)):
+def send_text(number: str, text: str):
+    url = f"{EVOLUTION_URL}/message/sendText/{INSTANCE}"
+    requests.post(
+        url,
+        headers={"apikey": API_KEY},
+        json={
+            "number": number,
+            "text": text
+        }
+    )
+
+def send_image(number: str, image_url: str, caption: str = ""):
+    url = f"{EVOLUTION_URL}/message/sendMedia/{INSTANCE}"
+    
+    payload = {
+        "number": number,
+        "mediatype": "image",
+        "mimetype": "image/png",  
+        "fileName": "imagem.png", 
+        "media": image_url,
+        "caption": caption
+    }
+    
+    print(f"\n[🔄 EVOLUTION API] Tentando enviar imagem para {number}...")
+    print(f"URL da Imagem: {image_url}")
+    
+    try:
+        response = requests.post(
+            url,
+            headers={
+                "apikey": API_KEY,
+                "Content-Type": "application/json"
+            },
+            json=payload,
+            timeout=15 # Evita que a requisição trave o seu servidor se a API demorar
+        )
+        
+        # Mostra no seu terminal se o envio deu certo ou o erro exato
+        if response.status_code == 200 or response.status_code == 201:
+            print("[✅ SUCESSO] Imagem enviada para o WhatsApp!")
+        else:
+            print(f"[❌ ERRO EVOLUTION] Status: {response.status_code}")
+            print(f"Detalhes do erro: {response.text}")
+            
+    except Exception as e:
+        print(f"[❌ ERRO INTERNO] Falha na requisição para a Evolution API: {str(e)}")
+        
+@router.post("/evolution_webhook")
+async def evolution_webhook(request: Request, db: Session = Depends(get_db)):
     try:
         body = await request.json()
+        
+        event_type = body.get("event", "")
+        if event_type and "messages.upsert" not in event_type:
+             return JSONResponse(content={"status": "ignored", "reason": "not a message event"})
+        
+        data = body.get("data", {})
+        key = data.get("key", {}) if "key" in data else data.get("message", {}).get("key", {})
+        remote_jid = key.get("remoteJid", "")
+        
+        if not remote_jid or "@g.us" in remote_jid or "status@broadcast" in remote_jid:
+            return JSONResponse(content={"status": "ignored", "reason": "group or status message"})
 
-        print("BODY:", body)
+        number = remote_jid.split("@")[0]
+        
+        message_data = data.get("message", {})
+        message = message_data.get("conversation") or message_data.get("extendedTextMessage", {}).get("text", "")
 
-        user_text = body.get("queryResult", {}).get("queryText", "")
-        id_wpp = body.get("session", "unknown_user")
+        if not message:
+            return JSONResponse(content={"status": "no_text"})
 
         nlp_service = request.app.state.nlp_service
         chat_service = ChatService(db, nlp_service)
-
-        resposta = await chat_service.process_message(id_wpp, user_text)
-
-        fulfillment_messages = [
-            {
-                "text": {
-                    "text": [resposta.text]
-                }
-            }
-        ]
+        
+        resposta = await chat_service.process_message(number, message)
 
         if resposta.image_url:
-            fulfillment_messages.append(
-                {
-                    "image": {
-                        "imageUri": resposta.image_url
-                    }
-                }
-            )
+            send_image(number, resposta.image_url, resposta.text)
+        elif resposta.text:
+            send_text(number, resposta.text)
 
-        return JSONResponse(
-            content={
-                "fulfillmentText": resposta.text,
-                "fulfillmentMessages": fulfillment_messages,
-            }
-        )
+        return JSONResponse(content={"status": "success"})
 
     except Exception as e:
         print("ERRO WEBHOOK:", str(e))
-        return JSONResponse(
-            content={
-                "fulfillmentText": "Erro interno no servidor.",
-                "fulfillmentMessages": [
-                    {
-                        "text": {
-                            "text": ["Erro interno no servidor."]
-                        }
-                    }
-                ],
-            }
-        )
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)

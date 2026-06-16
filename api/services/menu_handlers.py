@@ -171,6 +171,13 @@ def handle_servicos_cemae(user, db, nlp_service) -> ChatResponse:
         db=db,
     )
 
+def handle_vac_calendario(user, db, nlp_service) -> ChatResponse:
+    user.state = "WAITING_VACINACAO_CHOICE"
+    return build_response(
+        "*(Digite 0 para voltar ao menu principal)*",
+        "CALENDARIO",
+        db=db,
+    )
 
 def handle_servicos_cemerf(user, db, nlp_service) -> ChatResponse:
     user.state = "WAITING_SERVICOS_REDE_CHOICE"
