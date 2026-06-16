@@ -17,7 +17,7 @@ services:
     environment:
       DATABASE_ENABLED: "true"
       DATABASE_PROVIDER: "postgresql"
-      DATABASE_CONNECTION_URI: "postgresql://postgres:terrasanta321@evolution-postgres:5432/evolution_db"
+      DATABASE_CONNECTION_URI: "postgresql://postgres:postgres@evolution-postgres:5432/evolution_db"
       DATABASE_CONNECTION_CLIENT_NAME: "evolution_api"
     expose:
       - "8080"
