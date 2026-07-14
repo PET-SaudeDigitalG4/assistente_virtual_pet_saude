@@ -1,10 +1,10 @@
-Serviço: Eletrocardiograma 
+Serviço: CEMAE
 
 O que é esse serviço?
-O eletrocardiograma é um exame simples, rápido e indolor, que registra a atividade elétrica do coração e ajuda no diagnóstico de arritmias, infartos, entre outras condições cardíacas. 
+O CEMAE caracteriza-se como uma policlínica que oferece atendimentos médicos especializados, reunindo diversas especialidades em um único serviço, com o objetivo de garantir assistência integral, resolutiva e de qualidade à população. 
 
-O que preciso fazer para realizar o exame Eletrocardiograma?
-1. O médico solicita o exame durante a consulta na unidade básica de saúde.
+O que preciso fazer para ter acesso a esse serviço?
+1. O médico solicita a consulta com médico especialista durante a consulta na unidade básica de saúde.
 2. Entregue a solicitação de procedimento na unidade básica de saúde para que seja agendado.
 3. Aguarde o contato da equipe da unidade básica de saúde.
 4. Após agendamento, compareça ao CEMAE no dia e horário agendados.

@@ -1,49 +1,37 @@
-Serviço: Programa de Oxigenoterapia Domiciliar Prolongada
-
-Resumo:
-Este serviço permite a solicitação de oxigênio domiciliar para pacientes com doenças respiratórias crônicas. Todos os processos são seguidos mediante protocolo da Secretaria de Saúde do Estado da Bahia (SESAB).
+Serviço: Oxigenoterapia 
 
 O que é esse serviço?
-A Oxigenoterapia Domiciliar Prolongada é indicada para pacientes com diagnóstico clínico que requerem suporte contínuo de oxigênio em casa. O CEMAE é responsável por receber a documentação e iniciar o processo de encaminhamento e autorização do fornecimento, junto à SESAB.
+A Oxigenoterapia Domiciliar Prolongada é indicada para pacientes com diagnóstico clínico que requerem suporte contínuo de oxigênio em casa. 
 
-Exigências para realizar esse serviço:
-Cópias legíveis (xerox):
-Identidade (RG) e CPF do paciente
-artão do SUS do paciente (frente e verso)
-Conta da Coelba atualizada (da residência onde o paciente reside e fará uso do oxigênio)
-Identidade (RG), CPF e conta da Coelba do responsável (quando aplicável)
+O que preciso fazer para solicitar esse serviço?
+1. Reúna todos os documentos exigidos (originais e cópias).
+2. Vá até o CEMAE para entrega da documentação, cadastro e abertura do protocolo.
+3. Aguarde o agendamento da visita do assistente social.
+4. Após a avaliação dos documentos e visita do assistente social, a solicitação será enviada à Secretaria de Saúde do Estado (SESAB).
+5. O paciente será informado pela SESAB sobre o andamento e a liberação do fornecimento.
 
-Originais obrigatórios:
-Relatório médico do SUS recente (com no máximo 30 dias), contendo:
-Diagnóstico com CID 10
-Fluxo de oxigênio em litros por minuto
-Número de horas por dia de uso
-Tipo de equipamento necessário
-Identificação do médico (nome completo, especialidade e CRM legível)
+Quais os documentos necessários para o cadastro?
+1. Cópias legíveis (xerox):
+- Identidade (RG) e CPF do paciente
+- Cartão do SUS do paciente (frente e verso)
+- Conta da Coelba atualizada (da residência onde o paciente reside e fará uso do oxigênio)
+- Identidade (RG), CPF e conta da Coelba do responsável (quando aplicável)
+2. Originais obrigatórios:
+- Relatório médico do SUS recente (com no máximo 30 dias), contendo:
+* Diagnóstico com CID 10
+* Fluxo de oxigênio em litros por minuto
+* Número de horas por dia de uso
+* Tipo de equipamento necessário
+* Identificação do médico (nome completo, especialidade e CRM legível)
 
-Quem pode utilizar esse serviço?
-Pacientes que apresentem condição clínica comprovada com indicação de uso domiciliar de oxigênio.
 
-Quanto tempo leva?
-O prazo pode variar conforme a entrega completa da documentação, a visita técnica e a autorização da SESAB. Em geral, o processo inicia após análise técnica e social.
+Onde fica o CEMAE?
+Avenida Olívia Flores, 3000, Bairro Candeias, https://maps.app.goo.gl/Q61N7DgkEXPx3Qrk8
 
-Quais os custos?
-Este serviço é gratuito.
+Quais os dias e horários de funcionamento?
+Segunda a sexta-feira
+07:00 às 17:00h
 
-Passo a passo:
-1.	Reúna todos os documentos exigidos (originais e cópias).
-2.	Vá até o CEMAE para entrega da documentação e abertura do protocolo.
-3.	Aguarde o agendamento da visita do assistente social.
-4.	Após a avaliação, a solicitação será enviada à Secretaria de Saúde do Estado.
-5.	O paciente será informado sobre o andamento e a liberação do fornecimento.
-
-Canais de Atendimento:
-Presencialmente no CEMAE
-Telefone: (77) 3429-3452 / (77) 3229-3071
+Quais os contatos? 
+Telefone: (77) 3229-3069
 E-mail: pmvccemae@yahoo.com.br
-
-Outras informações:
-Local de atendimento:
-CEMAE – Centro Municipal de Atenção Especializada
-Complexo de Saúde – Avenida Olívia Flores, 3000 – Bairro Candeias – Vitória da Conquista – BA
-Atendimento: Segunda a sexta-feira, das 7h às 17h
