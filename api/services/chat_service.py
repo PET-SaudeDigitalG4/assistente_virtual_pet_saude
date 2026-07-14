@@ -1,10 +1,10 @@
 from api.models.models import User, Chat, Message
 from api.schemas.responses import ChatResponse
-from api.services.config_service import ConfigService
-from api.services.menu_handlers import MENU_ROUTER, TEXTS
 from api.services.nlp_service import NLPService
 from api.utils.logger import DbLogger
+from api.services.config_service import ConfigService
 
+from api.services.menu_handlers import handle_dynamic_menu, TEXTS
 
 class ChatService:
     def __init__(self, db, nlp_service: NLPService):
@@ -31,7 +31,7 @@ class ChatService:
                 "INFO",
                 "MESSAGE_RECEIVED",
                 f"Mensagem recebida de {id_wpp}",
-                user_id=user.id,
+                user_id=user.id
             )
 
             self._save_message(chat, text, "user")
@@ -44,19 +44,32 @@ class ChatService:
             if not user.state:
                 user.state = "NEW"
 
-            comandos_menu = ["0", "menu", "/menu"]
+
+            elif user.state not in ["NEW", "WAITING_NAME"] and user.state not in TEXTS:
+                user.state = "WAITING_MAIN_MENU"
+
+            comandos_menu = ["menu", "/menu"]
 
             if clean_text.lower() in comandos_menu:
-                user.state = "WAITING_MAIN_MENU_CHOICE"
-                response = ChatResponse(text=f"Voltando ao menu principal...\n\n{TEXTS['MAIN_MENU_TEXT']}")
+                if not user.name:
+                    user.state = "WAITING_NAME"
+                    response = ChatResponse(
+                        text=(
+                            "Olá! Sou o assistente virtual da Secretaria Municipal de Saúde.\n"
+                            "Para acessar o menu, digite apenas o seu nome:"
+                        )
+                    )
+                else:
+                    user.state = "WAITING_MAIN_MENU"
+                    response = ChatResponse(text=f"Voltando ao menu principal...\n\n{TEXTS['WAITING_MAIN_MENU']['text']}")
 
             elif user.state == "NEW":
                 if user.name:
-                    user.state = "WAITING_MAIN_MENU_CHOICE"
+                    user.state = "WAITING_MAIN_MENU"
                     rag_response = self.nlp.process(clean_text, user_name=user.name)
                     if not rag_response:
-                        rag_response = f"Oi, {user.name}!"
-                    response = ChatResponse(text=f"{rag_response}\n\n{TEXTS['MAIN_MENU_TEXT']}")
+                        rag_response = f"Oi, {user.name}!" 
+                    response = ChatResponse(text=f"{rag_response}\n\n{TEXTS['WAITING_MAIN_MENU']['text']}")
                 else:
                     user.state = "WAITING_NAME"
                     response = ChatResponse(
@@ -80,30 +93,28 @@ class ChatService:
                     response = ChatResponse(text="Digite apenas seu primeiro nome.")
                 else:
                     user.name = nome
-                    user.state = "WAITING_MAIN_MENU_CHOICE"
+                    user.state = "WAITING_MAIN_MENU"
                     response = ChatResponse(
                         text=(
                             f"Prazer, {user.name}! 😊\n"
                             "Como posso te ajudar hoje?\n\n"
-                            f"{TEXTS['MAIN_MENU_TEXT']}"
+                            f"{TEXTS['WAITING_MAIN_MENU']['text']}"
                         )
                     )
 
-            elif user.state in MENU_ROUTER:
-                current_menu_option, current_menu_text = MENU_ROUTER[user.state]
-                handler_function = current_menu_option.get(clean_text)
+            elif user.state in TEXTS:
+                state_config = TEXTS[user.state]
+                current_menu_text = state_config["text"]
+                option_config = state_config.get("options", {}).get(clean_text)
 
-                if handler_function:
-                    try:
-                        response = handler_function(user, self.db, self.nlp)
-                    except TypeError:
-                        response = handler_function(user, self.db)
+                if option_config:
+                    response = handle_dynamic_menu(user, clean_text, self.nlp, self.db)
                 else:
                     if clean_text.isdigit():
-                        response = ChatResponse(
-                            text=f"Opção inválida. Por favor, digite um número válido:\n\n{current_menu_text}"
-                        )
+                        # Se digitou um número que não está no menu
+                        response = ChatResponse(text=f"Opção inválida. Por favor, digite um número válido:\n\n{current_menu_text}")
                     else:
+                        # Se digitou texto livre, joga pro RAG avaliar
                         maintenance_mode = self.config_service.get_config("maintenance_mode", "false")
                         if maintenance_mode == "true":
                             response = ChatResponse(text="O Chat Bot está em manutenção.")
@@ -111,11 +122,13 @@ class ChatService:
                             try:
                                 rag_response = self.nlp.process(clean_text, user_name=user.name)
                                 rag_lower = (rag_response or "").lower()
+                                
+                                # A interceptação agora atua em conjunto com a resposta "INVÁLIDO" do Prompt da IA
+                                palavras_de_erro_ia = ["desculpe", "sinto muito", "não encontrei", "não entendi", "inválido"]
+                                ia_falhou = not rag_response or any(p in rag_lower for p in palavras_de_erro_ia)
 
-                                if not rag_response or "não" in rag_lower or "desculpe" in rag_lower or "sinto muito" in rag_lower:
-                                    response = ChatResponse(
-                                        text=f"Opção inválida. Por favor, digite um número válido:\n\n{current_menu_text}"
-                                    )
+                                if ia_falhou:
+                                    response = ChatResponse(text=f"Opção inválida. Por favor, digite um número válido:\n\n{current_menu_text}")
                                 else:
                                     response = ChatResponse(text=f"{rag_response}\n\n{current_menu_text}")
                             except Exception as nlp_error:
@@ -123,9 +136,7 @@ class ChatService:
                                 response = ChatResponse(text="Erro ao processar sua mensagem.")
 
             elif user.state.endswith("_FLOW") and clean_text.isdigit() and len(clean_text) == 1:
-                response = ChatResponse(
-                    text="Você está em um atendimento específico. Digite sua pergunta para mim ou envie *0* para voltar ao menu."
-                )
+                response = ChatResponse(text="Você está em um atendimento específico. Digite sua pergunta para mim ou envie 0 para voltar ao menu.")
 
             else:
                 maintenance_mode = self.config_service.get_config("maintenance_mode", "false")
