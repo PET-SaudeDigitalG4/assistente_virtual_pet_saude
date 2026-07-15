@@ -35,7 +35,6 @@ class ChatService:
             )
 
             self._save_message(chat, text, "user")
-
             if clean_text.lower() == "/resetar":
                 user.state = "NEW"
                 self.db.commit()
@@ -111,10 +110,8 @@ class ChatService:
                     response = handle_dynamic_menu(user, clean_text, self.nlp, self.db)
                 else:
                     if clean_text.isdigit():
-                        # Se digitou um número que não está no menu
                         response = ChatResponse(text=f"Opção inválida. Por favor, digite um número válido:\n\n{current_menu_text}")
                     else:
-                        # Se digitou texto livre, joga pro RAG avaliar
                         maintenance_mode = self.config_service.get_config("maintenance_mode", "false")
                         if maintenance_mode == "true":
                             response = ChatResponse(text="O Chat Bot está em manutenção.")
@@ -123,7 +120,6 @@ class ChatService:
                                 rag_response = self.nlp.process(clean_text, user_name=user.name)
                                 rag_lower = (rag_response or "").lower()
                                 
-                                # A interceptação agora atua em conjunto com a resposta "INVÁLIDO" do Prompt da IA
                                 palavras_de_erro_ia = ["desculpe", "sinto muito", "não encontrei", "não entendi", "inválido"]
                                 ia_falhou = not rag_response or any(p in rag_lower for p in palavras_de_erro_ia)
 
