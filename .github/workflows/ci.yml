@@ -46,13 +46,20 @@ jobs:
         with:
           python-version: "3.11"
 
-      - run: pip install alembic
+      - run: pip install alembic python-dotenv
 
-      # `alembic heads` resolve o grafo de revisoes sem conectar no banco.
-      # VERMELHO HOJE: f36d189f393f aponta para a8f3b1c2d4e5, que nao existe
-      # em api/alembic/versions/. Ver docs/10-problemas-conhecidos.md item 1.
+      # Resolve o grafo de revisoes sem conectar no banco. Pega down_revision
+      # apontando para revisao inexistente e head duplicado apos merge malfeito.
       - name: Cadeia de revisoes resolve
         working-directory: api
         env:
           DATABASE_URL: sqlite:///ci.db
         run: alembic heads
+
+      # Sqlite nao e Postgres, mas roda o upgrade inteiro de graca e pega DDL
+      # quebrado em qualquer revisao da cadeia.
+      - name: Upgrade completo em banco descartavel
+        working-directory: api
+        env:
+          DATABASE_URL: sqlite:///ci.db
+        run: alembic upgrade head

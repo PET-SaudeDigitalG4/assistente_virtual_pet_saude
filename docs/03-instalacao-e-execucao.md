@@ -75,9 +75,9 @@ alembic upgrade head
 cd ..
 ```
 
-> ⚠️ A migração de merge `f36d189f393f` referencia a revisão `a8f3b1c2d4e5`, que **não
-> existe** em `api/alembic/versions/`. `alembic upgrade head` falha nesse estado.
-> Ver [doc 10 — Problemas Conhecidos](10-problemas-conhecidos.md).
+A cadeia é ramificada (dois ramos a partir de `725740865e73`, reunidos por um merge) e
+termina no head `b9c4d6e7f8a1`. `alembic upgrade head` cria as 7 tabelas e insere o seed
+da imagem `CALENDARIO` em `flow_media`. Ver [doc 07](07-banco-de-dados.md).
 
 ## 4. Subir o backend
 

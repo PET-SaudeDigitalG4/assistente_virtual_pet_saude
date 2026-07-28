@@ -68,9 +68,15 @@ Fallback atual no JSON:
 }
 ```
 
-Se `flow_media` não existir no banco (situação atual — ver [doc 07](07-banco-de-dados.md)),
-`FlowMediaService` captura o erro, faz rollback e a cascata segue para o nível 2 sem
-quebrar a conversa.
+Se `flow_media` não existir no banco — ambiente que nunca rodou `alembic upgrade head` —
+`FlowMediaService` captura `ProgrammingError`/`OperationalError`, faz rollback e a cascata
+segue para o nível 2 sem quebrar a conversa.
+
+> Atenção: a migração `a8f3b1c2d4e5` insere um seed de `CALENDARIO` apontando para um
+> projeto Supabase (`jtqzxjsmynnjurhgurrv…imagem_2026-04-01_121353763.png`) **diferente**
+> do fallback em `menu_texts.json` (`vfnrmghzyxkpdcvlonjt…vacinacao.jpeg`). Como o nível 1
+> vence, num banco migrado a imagem enviada é a da migração. Vale conferir qual das duas
+> é a versão correta do calendário vacinal.
 
 ### Adicionar uma nova imagem
 
