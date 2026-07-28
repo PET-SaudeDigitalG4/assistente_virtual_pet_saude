@@ -134,18 +134,36 @@ A frase de fallback do item 4 é o gancho da heurística de falha em
 ```python
 class NLPService:
     def __init__(self, retriever): ...
-    def process(self, text, user_name=None) -> str
+    def process(self, text, user_name=None) -> Optional[str]
 ```
 
-Além de chamar `run_rag`, personaliza a saudação:
+**Devolve `None` quando o RAG não achou resposta** — texto vazio ou a frase de fallback.
+Isso poupa o chamador de adivinhar a falha procurando palavras dentro da resposta, que era
+o comportamento anterior e descartava resposta boa por conter "desculpe".
+
+A detecção mora em `app/adapters/respostas.py`:
+
+```python
+RESPOSTA_SEM_CONTEXTO = "Desculpe, não encontrei essa informação específica nos meus documentos."
+NUCLEO_SEM_CONTEXTO   = "não encontrei essa informação"
+
+def sem_contexto(resposta: str) -> bool
+```
+
+O módulo não importa nada — de propósito. Quem precisa saber "o RAG falhou?" não deveria
+carregar LangChain para descobrir, e é isso que permite testar a máquina de estados no CI.
+`rag_prompt` interpola `RESPOSTA_SEM_CONTEXTO`, então a frase que o modelo é instruído a
+emitir e a frase que o código reconhece são literalmente a mesma.
+
+O casamento é pelo núcleo, não por igualdade exata: o modelo às vezes devolve a frase com
+aspas, ponto final a mais ou quebra de linha.
+
+Com resposta válida, personaliza a saudação:
 
 | Condição na resposta | Substituição |
 |---|---|
 | contém a saudação institucional completa | `"Oi, {nome}! 😊\nComo posso te ajudar?"` |
 | contém `"Olá!"` | troca `"Olá!"` por `"Oi, {nome}! 😊"` |
-
-`nlp_service.py` importa `setup_system` sem usar — import morto que faz o módulo
-carregar `app.main` desnecessariamente.
 
 ## Caminho alternativo: Gradio
 

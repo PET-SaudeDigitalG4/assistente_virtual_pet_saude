@@ -67,55 +67,67 @@ se algum dia servir de referência.
 
 ## Correção e comportamento
 
-### 5. Heurística de falha do RAG por substring
+Todos corrigidos, cobertos por `tests/test_chat_service.py` e
+`tests/test_migracao_id_wpp.py`.
 
-`ChatService.process_message`:
+### ~~5. Heurística de falha do RAG por substring~~ — CORRIGIDO
 
-```python
-palavras_de_erro_ia = ["desculpe", "sinto muito", "não encontrei", "não entendi", "inválido"]
-ia_falhou = not rag_response or any(p in rag_lower for p in palavras_de_erro_ia)
-```
+`ChatService` procurava `["desculpe", "sinto muito", "não encontrei", "não entendi",
+"inválido"]` dentro da resposta para decidir se a IA falhou. Qualquer resposta correta
+contendo "desculpe" era descartada e substituída por "Opção inválida".
 
-Uma resposta correta que contenha "desculpe" é descartada e substituída por "Opção
-inválida". Alternativa: comparar com a frase de fallback exata definida no
-`rag_prompt`, ou fazer o RAG devolver um sinal estruturado.
+Corrigido invertendo a responsabilidade: `NLPService.process` agora devolve `None` quando
+o RAG não achou nada, e o chamador só precisa de um `if`. A frase de fallback virou a
+constante `RESPOSTA_SEM_CONTEXTO` em `app/adapters/respostas.py` — módulo sem nenhum
+import — usada tanto pelo `rag_prompt` que a ordena quanto pelo detector que a reconhece.
+Antes eram dois literais soltos, livres para divergir.
 
-### 6. `_clean_text` corta tudo antes do último `:`
+### ~~6. `_clean_text` corta tudo antes do último `:`~~ — CORRIGIDO
 
-`"Horário: 8 às 17"` vira `"8 às 17"`. O corte foi criado para remover prefixos de
-gateway; deveria ser restrito a esse caso (ex.: prefixo `whatsapp:` no início).
+`"Horário: 8 às 17"` virava `"8 às 17"`. O corte existia para remover prefixo de gateway.
 
-### 7. Mesmo telefone = usuários diferentes por gateway
+Removido: `_clean_text` agora só colapsa espaços. Prefixo de gateway, se voltar, é
+problema da rota — a camada que conhece o formato do gateway — e não do domínio.
 
-Twilio entrega `From = "whatsapp:+5577999999999"`; a Evolution API entrega
-`"5577999999999"`. Como `id_wpp` é único, o mesmo cidadão vira dois registros com
-estados independentes. Normalizar para E.164 na entrada.
+### ~~7. Mesmo telefone = usuários diferentes por gateway~~ — CORRIGIDO
 
-### 8. `/resetar` não reseta de fato
+`normalizar_id_wpp` reduz o identificador aos dígitos na entrada do `ChatService`, então
+`whatsapp:+5577999999999` e `5577999999999` viram o mesmo usuário.
 
-Volta `state` para `NEW`, mas mantém `users.name`. Como o ramo `NEW` com nome
-preenchido vai direto ao menu, o "reinício" só pula o onboarding — o nome nunca pode
-ser corrigido pelo usuário.
+Linhas já gravadas são convertidas pela migração `d2f3a4b5c6d7`. Onde a normalização
+colidiria — a mesma pessoa existindo pelos dois gateways — a linha antiga fica intacta:
+fundir históricos exigiria escolher qual nome e estado sobrevivem, e `id_wpp` é `UNIQUE`,
+então sem a guarda a migração morreria no meio.
 
-### 9. Ramo inalcançável em `ChatService`
+### ~~8. `/resetar` não reseta de fato~~ — CORRIGIDO
 
-O bloco `elif user.state.endswith("_FLOW") ...` nunca executa: nenhum estado em
-`menu_texts.json` termina em `_FLOW`, e a normalização anterior já teria movido
-qualquer estado desconhecido para `WAITING_MAIN_MENU`. Código morto.
+Voltava `state` para `NEW` mas mantinha `users.name`, e o ramo `NEW` com nome preenchido
+pula o onboarding — o nome nunca podia ser corrigido. Agora limpa os dois.
 
-### 10. Envio de imagem sem tratamento de erro útil
+### ~~9. Ramo inalcançável em `ChatService`~~ — CORRIGIDO
 
-`send_image` em `webhook.py` monta o `try/except`, imprime a falha e segue — o cidadão
-não recebe nada e não há log de auditoria. Além disso, `mimetype="image/png"` e
-`fileName="imagem.png"` são fixos, enquanto a única imagem configurada é `.jpeg`.
-`send_text` não tem `try/except` nem timeout.
+O bloco `elif user.state.endswith("_FLOW")` era inalcançável. Removido junto com a
+reescrita de `process_message`, que passou de uma cadeia de `if/elif` de 100 linhas para
+um despachante e um método por estado.
 
-### 11. Sem retorno de erro nas rotas
+### ~~10. Envio de imagem sem tratamento de erro útil~~ — CORRIGIDO
 
-`ChatService` engole toda exceção e devolve 200 com mensagem genérica; falha de LLM,
-de banco ou de rede fica indistinguível. Os `print()` espalhados
-(`"ERRO REAL:"`, `"STATE ANTES:"`, `"NOME EXTRAÍDO:"`) deveriam ser `logger` — e
-`DbLogger` já existe para isso, mas só é chamado em um lugar.
+`send_text` e `send_image` agora devolvem `bool`, verificam o status HTTP com
+`raise_for_status`, têm `timeout` e logam a falha com stack trace. Falhando a imagem, a
+rota **manda o texto** — o cidadão recebe a resposta mesmo sem a foto. Falhando tudo, a
+rota responde 502 em vez de `{"status": "success"}` mentiroso.
+
+O `mimetype` sai de `mimetypes.guess_type(url)` em vez do `image/png` fixo, que estava
+errado para a imagem `.jpeg` configurada hoje.
+
+### ~~11. Sem retorno de erro nas rotas~~ — CORRIGIDO
+
+Os `print()` (`"ERRO REAL:"`, `"STATE ANTES:"`, `"NOME EXTRAÍDO:"`) viraram `logger`, e a
+exceção capturada em `process_message` agora grava `MESSAGE_FAILED` em `audit_logs` com o
+tipo do erro — antes o `DbLogger` só era chamado num lugar.
+
+O status 200 com mensagem amigável foi **mantido de propósito**: a conversa não pode
+quebrar para o cidadão porque a Groq caiu. O que faltava era rastro, não código de erro.
 
 ## Qualidade do RAG
 
