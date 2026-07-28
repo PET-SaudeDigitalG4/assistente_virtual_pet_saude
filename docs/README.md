@@ -17,7 +17,7 @@ busca semântica sobre documentos oficiais.
 | [07 — Banco de Dados](07-banco-de-dados.md) | Modelos, tabelas, migrações Alembic |
 | [08 — Base de Conhecimento](08-base-de-conhecimento.md) | Documentos em `data/servicos`, formato, como adicionar |
 | [09 — Configuração e Mídias](09-configuracao-e-midias.md) | `system_configs`, `flow_media`, imagens de fluxo |
-| [10 — Problemas Conhecidos](10-problemas-conhecidos.md) | Bugs abertos, dívidas técnicas, pontos de atenção |
+| [10 — Problemas Conhecidos](10-problemas-conhecidos.md) | O que continua aberto e por quê |
 | [11 — Integração Contínua](11-ci.md) | GitHub Actions, testes, como rodar os checks localmente |
 
 ## Início rápido

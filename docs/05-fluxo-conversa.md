@@ -59,9 +59,9 @@ Aceito → grava `users.name`, vai para `WAITING_MAIN_MENU` e já exibe o menu.
 return " ".join((text or "").strip().split())
 ```
 
-Uma versão anterior cortava tudo antes do último `:` para remover prefixo de gateway, o
-que mutilava qualquer pergunta legítima com dois-pontos. Se um gateway voltar a prefixar,
-o tratamento é na rota — a camada que conhece o formato — e não aqui.
+Nada além disso: se algum gateway passar a prefixar a mensagem, o tratamento é na rota — a
+camada que conhece o formato do gateway. Filtrar por pontuação aqui mutila pergunta
+legítima (`"Horário: 8 às 17"`).
 
 **Identificador** (`normalizar_id_wpp`): reduz aos dígitos.
 

@@ -72,18 +72,7 @@ Se `flow_media` não existir no banco — ambiente que nunca rodou `alembic upgr
 `FlowMediaService` captura `ProgrammingError`/`OperationalError`, faz rollback e a cascata
 segue para o nível 2 sem quebrar a conversa.
 
-> **Histórico — divergência de URL do `CALENDARIO`.** A migração `a8f3b1c2d4e5`
-> (2026-04-01) semeou `flow_media` com uma URL do projeto Supabase
-> `jtqzxjsmynnjurhgurrv`. Em 2026-06-15 o commit `c10f74e` trocou a URL para
-> `vfnrmghzyxkpdcvlonjt…vacinacao.jpeg`, mas **só em `menu_texts.json`** — o nível 4,
-> o último da cascata. Como o nível 1 vence, todo banco já migrado continuou servindo a
-> imagem antiga, e a correção não teve efeito em produção.
->
-> Resolvido pela migração `c7d8e9fa0b1c`, que faz `UPDATE` da linha para a URL vigente.
-> O `UPDATE` é filtrado por `media_url = <URL antiga>`, então preserva qualquer valor
-> ajustado à mão direto no banco.
-
-### Trocar uma URL de imagem daqui em diante
+### Trocar uma URL de imagem
 
 `flow_media` existe justamente para mudar imagem **sem deploy**. O caminho normal é um
 `UPDATE` no banco:
@@ -94,8 +83,10 @@ UPDATE flow_media
  WHERE flow_key = 'CALENDARIO' AND media_type = 'image';
 ```
 
-Editar só o `menu_texts.json` **não** muda o que o cidadão recebe num banco migrado —
-foi exatamente essa a armadilha acima. O JSON é o último fallback, não a fonte de verdade.
+⚠️ Editar só o `menu_texts.json` **não** muda o que o cidadão recebe num banco migrado: o
+JSON é o último fallback da cascata, e o `flow_media` vence. Já aconteceu de uma troca de
+imagem ficar meses sem efeito em produção por causa disso.
+
 Migração nova só se for para corrigir dados já gravados em ambientes existentes.
 
 ### Adicionar uma nova imagem
@@ -117,12 +108,13 @@ Atenção ao casing: `flow_media.flow_key` é comparado em **maiúsculas**,
 
 | Gateway | Comportamento |
 |---|---|
-| Evolution API | `POST /message/sendMedia/{instance}` com `mediatype=image`, `mimetype=image/png`, `fileName=imagem.png` e `caption` = texto da resposta. **Só a imagem é enviada** — o texto vai como legenda |
+| Evolution API | `POST /message/sendMedia/{instance}` com `mediatype=image`, `caption` = texto da resposta. **Só a imagem é enviada** — o texto vai como legenda |
 | Twilio | TwiML com `<Media>` dentro de `<Message>`, junto do `<Body>` |
 | REST `/messages/receive` | Campo `image_url` no JSON; a renderização é do cliente |
 
-O `mimetype`/`fileName` fixos em PNG no envio pela Evolution API não batem com a
-imagem `.jpeg` configurada hoje. Ver [doc 10](10-problemas-conhecidos.md).
+Na Evolution API o `mimetype` e o `fileName` saem de `mimetypes.guess_type(url)`. Falhando
+o envio da imagem, a rota manda o texto puro — o cidadão recebe a resposta mesmo sem a
+foto. Ver [doc 04](04-api-referencia.md).
 
 ## Configuração fora do banco
 
