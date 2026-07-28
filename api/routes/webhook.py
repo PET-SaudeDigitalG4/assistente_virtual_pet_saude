@@ -1,3 +1,5 @@
+import logging
+import mimetypes
 import os
 
 import requests
@@ -11,48 +13,62 @@ from api.services.chat_service import ChatService
 
 router = APIRouter()
 
+logger = logging.getLogger("AppLogger")
+
 EVOLUTION_URL = os.getenv("EVOLUTION_URL", "http://localhost:8080")
 INSTANCE = os.getenv("EVOLUTION_INSTANCE", "meu-wpp")
 API_KEY = os.getenv("EVOLUTION_API_KEY", "")
 
-def send_text(number: str, text: str):
+def send_text(number: str, text: str) -> bool:
     url = f"{EVOLUTION_URL}/message/sendText/{INSTANCE}"
-    requests.post(
-        url,
-        headers={"apikey": API_KEY},
-        json={
-            "number": number,
-            "text": text
-        },
-        timeout=15
-    )
+    try:
+        resposta = requests.post(
+            url,
+            headers={"apikey": API_KEY},
+            json={
+                "number": number,
+                "text": text
+            },
+            timeout=15
+        )
+        resposta.raise_for_status()
+        return True
+    except Exception:
+        logger.exception("Falha ao enviar texto para %s", number)
+        return False
 
-def send_image(number: str, image_url: str, caption: str = ""):
+def send_image(number: str, image_url: str, caption: str = "") -> bool:
     url = f"{EVOLUTION_URL}/message/sendMedia/{INSTANCE}"
-    
+
+    # O mimetype vinha fixo em image/png enquanto a imagem configurada e .jpeg.
+    mimetype = mimetypes.guess_type(image_url)[0] or "image/jpeg"
+    extensao = mimetypes.guess_extension(mimetype) or ".jpg"
+
     payload = {
         "number": number,
         "mediatype": "image",
-        "mimetype": "image/png",  
-        "fileName": "imagem.png", 
+        "mimetype": mimetype,
+        "fileName": f"imagem{extensao}",
         "media": image_url,
         "caption": caption
     }
-      
+
     try:
-        response = requests.post(
+        resposta = requests.post(
             url,
             headers={
                 "apikey": API_KEY,
                 "Content-Type": "application/json"
             },
             json=payload,
-            timeout=15 
+            timeout=15
         )
-            
-    except Exception as e:
-        print(f"Falha na requisição: {str(e)}")
-        
+        resposta.raise_for_status()
+        return True
+    except Exception:
+        logger.exception("Falha ao enviar imagem para %s", number)
+        return False
+
 @router.post("/evolution_webhook")
 async def evolution_webhook(request: Request, db: Session = Depends(get_db)):
     try:
@@ -89,12 +105,24 @@ async def evolution_webhook(request: Request, db: Session = Depends(get_db)):
         resposta = await chat_service.process_message(number, message)
 
         if resposta.image_url:
-            send_image(number, resposta.image_url, resposta.text)
+            # Imagem falhou: manda ao menos o texto, senao o cidadao fica sem
+            # resposta nenhuma e o unico registro e uma linha de log.
+            enviado = send_image(number, resposta.image_url, resposta.text)
+            if not enviado and resposta.text:
+                enviado = send_text(number, resposta.text)
         elif resposta.text:
-            send_text(number, resposta.text)
+            enviado = send_text(number, resposta.text)
+        else:
+            enviado = True
+
+        if not enviado:
+            return JSONResponse(
+                content={"status": "error", "message": "falha ao entregar a resposta"},
+                status_code=502,
+            )
 
         return JSONResponse(content={"status": "success"})
 
     except Exception as e:
-        print("ERRO:", str(e))
+        logger.exception("Falha no evolution_webhook")
         return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)

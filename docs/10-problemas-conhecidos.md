@@ -67,113 +67,165 @@ se algum dia servir de referência.
 
 ## Correção e comportamento
 
-### 5. Heurística de falha do RAG por substring
+Todos corrigidos, cobertos por `tests/test_chat_service.py` e
+`tests/test_migracao_id_wpp.py`.
 
-`ChatService.process_message`:
+### ~~5. Heurística de falha do RAG por substring~~ — CORRIGIDO
 
-```python
-palavras_de_erro_ia = ["desculpe", "sinto muito", "não encontrei", "não entendi", "inválido"]
-ia_falhou = not rag_response or any(p in rag_lower for p in palavras_de_erro_ia)
-```
+`ChatService` procurava `["desculpe", "sinto muito", "não encontrei", "não entendi",
+"inválido"]` dentro da resposta para decidir se a IA falhou. Qualquer resposta correta
+contendo "desculpe" era descartada e substituída por "Opção inválida".
 
-Uma resposta correta que contenha "desculpe" é descartada e substituída por "Opção
-inválida". Alternativa: comparar com a frase de fallback exata definida no
-`rag_prompt`, ou fazer o RAG devolver um sinal estruturado.
+Corrigido invertendo a responsabilidade: `NLPService.process` agora devolve `None` quando
+o RAG não achou nada, e o chamador só precisa de um `if`. A frase de fallback virou a
+constante `RESPOSTA_SEM_CONTEXTO` em `app/adapters/respostas.py` — módulo sem nenhum
+import — usada tanto pelo `rag_prompt` que a ordena quanto pelo detector que a reconhece.
+Antes eram dois literais soltos, livres para divergir.
 
-### 6. `_clean_text` corta tudo antes do último `:`
+### ~~6. `_clean_text` corta tudo antes do último `:`~~ — CORRIGIDO
 
-`"Horário: 8 às 17"` vira `"8 às 17"`. O corte foi criado para remover prefixos de
-gateway; deveria ser restrito a esse caso (ex.: prefixo `whatsapp:` no início).
+`"Horário: 8 às 17"` virava `"8 às 17"`. O corte existia para remover prefixo de gateway.
 
-### 7. Mesmo telefone = usuários diferentes por gateway
+Removido: `_clean_text` agora só colapsa espaços. Prefixo de gateway, se voltar, é
+problema da rota — a camada que conhece o formato do gateway — e não do domínio.
 
-Twilio entrega `From = "whatsapp:+5577999999999"`; a Evolution API entrega
-`"5577999999999"`. Como `id_wpp` é único, o mesmo cidadão vira dois registros com
-estados independentes. Normalizar para E.164 na entrada.
+### ~~7. Mesmo telefone = usuários diferentes por gateway~~ — CORRIGIDO
 
-### 8. `/resetar` não reseta de fato
+`normalizar_id_wpp` reduz o identificador aos dígitos na entrada do `ChatService`, então
+`whatsapp:+5577999999999` e `5577999999999` viram o mesmo usuário.
 
-Volta `state` para `NEW`, mas mantém `users.name`. Como o ramo `NEW` com nome
-preenchido vai direto ao menu, o "reinício" só pula o onboarding — o nome nunca pode
-ser corrigido pelo usuário.
+Linhas já gravadas são convertidas pela migração `d2f3a4b5c6d7`. Onde a normalização
+colidiria — a mesma pessoa existindo pelos dois gateways — a linha antiga fica intacta:
+fundir históricos exigiria escolher qual nome e estado sobrevivem, e `id_wpp` é `UNIQUE`,
+então sem a guarda a migração morreria no meio.
 
-### 9. Ramo inalcançável em `ChatService`
+### ~~8. `/resetar` não reseta de fato~~ — CORRIGIDO
 
-O bloco `elif user.state.endswith("_FLOW") ...` nunca executa: nenhum estado em
-`menu_texts.json` termina em `_FLOW`, e a normalização anterior já teria movido
-qualquer estado desconhecido para `WAITING_MAIN_MENU`. Código morto.
+Voltava `state` para `NEW` mas mantinha `users.name`, e o ramo `NEW` com nome preenchido
+pula o onboarding — o nome nunca podia ser corrigido. Agora limpa os dois.
 
-### 10. Envio de imagem sem tratamento de erro útil
+### ~~9. Ramo inalcançável em `ChatService`~~ — CORRIGIDO
 
-`send_image` em `webhook.py` monta o `try/except`, imprime a falha e segue — o cidadão
-não recebe nada e não há log de auditoria. Além disso, `mimetype="image/png"` e
-`fileName="imagem.png"` são fixos, enquanto a única imagem configurada é `.jpeg`.
-`send_text` não tem `try/except` nem timeout.
+O bloco `elif user.state.endswith("_FLOW")` era inalcançável. Removido junto com a
+reescrita de `process_message`, que passou de uma cadeia de `if/elif` de 100 linhas para
+um despachante e um método por estado.
 
-### 11. Sem retorno de erro nas rotas
+### ~~10. Envio de imagem sem tratamento de erro útil~~ — CORRIGIDO
 
-`ChatService` engole toda exceção e devolve 200 com mensagem genérica; falha de LLM,
-de banco ou de rede fica indistinguível. Os `print()` espalhados
-(`"ERRO REAL:"`, `"STATE ANTES:"`, `"NOME EXTRAÍDO:"`) deveriam ser `logger` — e
-`DbLogger` já existe para isso, mas só é chamado em um lugar.
+`send_text` e `send_image` agora devolvem `bool`, verificam o status HTTP com
+`raise_for_status`, têm `timeout` e logam a falha com stack trace. Falhando a imagem, a
+rota **manda o texto** — o cidadão recebe a resposta mesmo sem a foto. Falhando tudo, a
+rota responde 502 em vez de `{"status": "success"}` mentiroso.
+
+O `mimetype` sai de `mimetypes.guess_type(url)` em vez do `image/png` fixo, que estava
+errado para a imagem `.jpeg` configurada hoje.
+
+### ~~11. Sem retorno de erro nas rotas~~ — CORRIGIDO
+
+Os `print()` (`"ERRO REAL:"`, `"STATE ANTES:"`, `"NOME EXTRAÍDO:"`) viraram `logger`, e a
+exceção capturada em `process_message` agora grava `MESSAGE_FAILED` em `audit_logs` com o
+tipo do erro — antes o `DbLogger` só era chamado num lugar.
+
+O status 200 com mensagem amigável foi **mantido de propósito**: a conversa não pode
+quebrar para o cidadão porque a Groq caiu. O que faltava era rastro, não código de erro.
 
 ## Qualidade do RAG
 
-### 12. Modelo de embeddings em inglês para base em português
+### ~~12. Modelo de embeddings em inglês para base em português~~ — TROCADO, NÃO MEDIDO
 
-`all-MiniLM-L6-v2` é predominantemente anglófono. Um modelo multilíngue
-(`paraphrase-multilingual-MiniLM-L12-v2`, `intfloat/multilingual-e5-small`) tende a
-recuperar melhor em PT-BR. Trocar exige apenas `app/adapters/embeddings.py`.
+`all-MiniLM-L6-v2` é predominantemente anglófono e a base inteira está em português.
 
-### 13. Uma chamada extra de LLM por mensagem
+Padrão agora é `paraphrase-multilingual-MiniLM-L12-v2`, o equivalente multilíngue da mesma
+família — mesma dimensionalidade, sem exigir prefixo `query:`/`passage:` como os modelos
+E5, então a troca é só o nome do modelo. Sobrescrevível por `EMBEDDINGS_MODEL`.
 
-`classify_input` gasta uma requisição só para decidir entre `greeting` e `question`.
-Uma checagem local por lista de saudações resolveria a maioria dos casos, com o LLM
-como desempate.
+> **A melhora não foi medida.** Comprovar exige rodar o RAG com o modelo baixado e comparar
+> respostas antes/depois num conjunto de perguntas reais — o que precisa de chave da Groq e
+> de alguém que saiba a resposta certa de cada pergunta. Até lá é palpite informado, não
+> resultado. Se a recuperação piorar, `EMBEDDINGS_MODEL=sentence-transformers/all-MiniLM-L6-v2`
+> reverte sem tocar em código.
+>
+> É o que motiva o item 3 dos próximos passos em [doc 11](11-ci.md).
 
-### 14. Índice reconstruído a cada boot
+### ~~13. Uma chamada extra de LLM por mensagem~~ — CORRIGIDO
 
-Sem `FAISS.save_local` / `load_local`. Com 16 arquivos é tolerável; cresce linearmente
-com a base e atrasa cada deploy.
+`classify_input` gastava uma requisição à Groq só para decidir entre `greeting` e
+`question`, dobrando latência e custo para reconhecer "oi".
 
-### 15. Sem memória de conversa
+Substituído por `e_saudacao` em `app/core/intencao.py`: normaliza o texto e compara com um
+conjunto, sem LLM. Mensagem com mais de 3 palavras nunca é saudação, então
+`"Oi, onde fica o CEMERF?"` continua indo para o RAG. Coberto por `tests/test_intencao.py`
+— que já pegou um caso real, `"e aí"`, faltando no conjunto.
+
+### 14. Índice reconstruído a cada boot — NÃO CORRIGIDO (deliberado)
+
+Sem `FAISS.save_local` / `load_local`, o índice é remontado a cada subida.
+
+Não implementado por avaliação de custo/benefício: o boot gasta o tempo carregando o
+modelo de embeddings, não vetorizando. São 16 arquivos, algo em torno de 50 chunks — a
+vetorização é uma fração do total, e o modelo teria que ser carregado de qualquer forma
+para atender as consultas. Persistir o índice trocaria ~1 segundo por uma superfície de
+invalidação de cache, que é fonte clássica de bug: base editada e índice velho em disco
+significa o bot respondendo com informação de saúde desatualizada, sem sintoma visível.
+
+Revisitar quando a base crescer uma ordem de grandeza. Aí o cálculo muda e a
+invalidação por hash do conteúdo passa a valer o risco.
+
+### 15. Sem memória de conversa — NÃO CORRIGIDO (decisão de produto)
 
 `generate_response` recebe `historico` e ignora. Perguntas de acompanhamento
 ("e o horário dele?") não têm contexto — cada mensagem é isolada.
 
+Não é defeito, é funcionalidade ausente, e mudá-la altera o comportamento do bot com o
+cidadão. Implementar significa decidir: quantos turnos entram no contexto, o que acontece
+quando o histórico contradiz os documentos, e como isso convive com um `rag_prompt` que
+hoje proíbe qualquer coisa fora do CONTEXTO. As mensagens já estão todas persistidas, então
+a matéria-prima existe — falta a decisão.
+
 ## Estrutura e higiene
 
-### 16. Código morto
+### ~~16. Código morto~~ — CORRIGIDO
 
-| Item | Situação |
+| Item | Destino |
 |---|---|
-| `app/config.py` | `API_KEY` e `BASE_DIR` não são lidos por ninguém; `BASE_DIR` aponta para caminho inexistente |
-| `app/database/conn.py` | Arquivo vazio |
-| `app/utils/logger.py` | Arquivo vazio |
-| `api/services/nlp_service.py` | Importa `setup_system` sem usar |
-| `api/dependencies/dependencies.py` | `get_session` duplica `get_db` |
-| `app/test/test_retriever.py` | Importa `src.adapters.core.vector_store`, que não existe |
+| `app/config.py` | Removido — `API_KEY` e `BASE_DIR` não eram lidos, e `BASE_DIR` apontava para caminho inexistente |
+| `app/database/conn.py` | Removido — arquivo vazio |
+| `app/utils/logger.py` | Removido — arquivo vazio |
+| `app/test/` | Removido — dois scripts de inspeção e um quebrado; os testes reais vivem em `tests/` |
+| `api/services/nlp_service.py` | Import morto de `setup_system` removido |
+| `api/dependencies/dependencies.py` | `get_session` removido; as rotas usam `get_db` |
+| `app/adapters/prompts.py` | `intent_prompt` removido junto com `classify_input`; `import *` trocado por imports explícitos |
 
-### 17. Cobertura de testes mínima
+### ~~17. Cobertura de testes mínima~~ — CORRIGIDO
 
-`app/test/` são scripts de inspeção manual (só `print`). O único teste automatizado é
-`tests/test_menu_texts.py`, que valida a integridade de `menu_texts.json` (ver
-[doc 11](11-ci.md)). Ainda sem cobertura para: máquina de estados do `ChatService`,
-`_clean_text`, validação de nome e a cascata de `_resolve_image_url` — todos puros ou
-facilmente isoláveis, mas hoje só testáveis com o import pesado de `app.main`.
+De 0 para **185 testes**, todos rodando no CI sem baixar modelo nenhum:
 
-### 18. Dependência faltando
+| Arquivo | Cobre |
+|---|---|
+| `tests/test_chat_service.py` | Máquina de estados completa, contra sqlite em memória |
+| `tests/test_security.py` | Autenticação das três rotas, com foco nos caminhos de falha |
+| `tests/test_menu_texts.py` | Integridade de `menu_texts.json` |
+| `tests/test_migracao_id_wpp.py` | Guarda de colisão da migração `d2f3a4b5c6d7` |
+| `tests/test_intencao.py` | Detecção de saudação |
 
-`requests` é usado em `api/routes/webhook.py` e não está em `api/requirements.txt`.
-Nenhum dos dois requirements tem versões fixadas — build não reprodutível.
-`api/requirements.txt` lista `fastapi` duas vezes e traz `jose` além de
-`python-jose[cryptography]` (pacote errado, mesmo nome de import).
+Continua sem cobertura: recuperação e qualidade de resposta do RAG, que exigiriam o modelo
+baixado e chave da Groq. Ver [doc 11](11-ci.md).
 
-### 19. Dependências instaladas e não usadas
+### ~~18. Dependência faltando~~ — CORRIGIDO
 
-`passlib[bcrypt]`, `bcrypt`, `python-jose`, `sqlalchemy_utils` sugerem autenticação
-planejada e nunca implementada. `langchain-openai` está no requirements mas o projeto
-usa Groq.
+`requests` adicionado, `fastapi` duplicado e o pacote errado `jose` removidos.
+
+`api/requirements.txt` agora tem **versões fixadas**, resolvidas por instalação real num
+venv limpo — não chutadas. `app/requirements.txt` ficou livre de propósito: arrasta torch,
+passa de 2 GB, e fixar sem resolver de verdade seria adivinhação.
+
+### ~~19. Dependências instaladas e não usadas~~ — CORRIGIDO
+
+Removidos `passlib[bcrypt]`, `bcrypt==4.0.1`, `python-jose[cryptography]` e
+`sqlalchemy_utils` — restos de uma autenticação planejada e nunca implementada. Também
+saíram `langchain-openai` (o projeto usa Groq) e `accelerate` (opcional, nunca importado).
+
+Se a autenticação de usuários voltar à pauta, os pacotes voltam junto.
 
 ## Privacidade
 

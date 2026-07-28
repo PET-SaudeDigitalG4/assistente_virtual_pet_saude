@@ -19,17 +19,17 @@ pip install -r api/requirements.txt
 pip install -r app/requirements.txt
 ```
 
-| Arquivo | Principais pacotes |
-|---|---|
-| `api/requirements.txt` | fastapi, uvicorn, sqlalchemy, alembic, psycopg2-binary, pydantic, twilio, python-dotenv, passlib, python-jose |
-| `app/requirements.txt` | langchain (+community/core/openai), langchain_groq, faiss-cpu, sentence-transformers, transformers, huggingface-hub, gradio |
+| Arquivo | Pacotes | Versões |
+|---|---|---|
+| `api/requirements.txt` | fastapi, uvicorn, sqlalchemy, alembic, psycopg2-binary, pydantic, python-dotenv, python-multipart, requests, twilio | **fixadas** |
+| `app/requirements.txt` | langchain (+community/core), langchain_groq, faiss-cpu, sentence-transformers, transformers, huggingface-hub, gradio | livres |
 
-`api/requirements.txt` não lista `requests`, usado por `api/routes/webhook.py`.
-Instale explicitamente se ainda não vier como dependência transitiva:
+As versões de `api/` estão fixadas para o build ser reproduzível — sem isso o CI quebra
+sozinho quando qualquer dependência lançar versão nova. Para atualizar: instale sem os
+pins num venv limpo e rode `pip freeze`.
 
-```powershell
-pip install requests
-```
+As de `app/` ficaram livres: o conjunto arrasta torch e passa de 2 GB, e fixar versão sem
+antes resolver a instalação de verdade seria chute.
 
 ## 2. Variáveis de ambiente
 
@@ -74,7 +74,7 @@ FLOW_IMAGE_CALENDARIO=https://.../vacinacao.jpeg
 | `EVOLUTION_URL` / `EVOLUTION_INSTANCE` / `EVOLUTION_API_KEY` | `api/routes/webhook.py` | Só para Evolution |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `docker-compose.yaml` | Só para Evolution |
 | `FLOW_IMAGE_<CHAVE>` | `api/services/menu_handlers.py` | Não |
-| `API_KEY` | `app/config.py` (declarada, não usada) | Não |
+| `EMBEDDINGS_MODEL` | `app/adapters/embeddings.py` | Não — troca o modelo de embeddings |
 
 > As rotas de entrada **falham fechado**: variável de ambiente ausente significa negar,
 > nunca liberar. Sem `WEBHOOK_TOKEN` a aplicação sobe normalmente, mas todo POST em
@@ -98,7 +98,7 @@ cd ..
 ```
 
 A cadeia é ramificada (dois ramos a partir de `725740865e73`, reunidos por um merge) e
-termina no head `c7d8e9fa0b1c`. `alembic upgrade head` cria as 7 tabelas e insere o seed
+termina no head `d2f3a4b5c6d7`. `alembic upgrade head` cria as 7 tabelas e insere o seed
 da imagem `CALENDARIO` em `flow_media`. Ver [doc 07](07-banco-de-dados.md).
 
 ## 4. Subir o backend
@@ -109,8 +109,8 @@ Da **raiz do projeto** (os imports são absolutos: `api.*` e `app.*`):
 uvicorn api.main:app --reload
 ```
 
-O primeiro boot demora: baixa `sentence-transformers/all-MiniLM-L6-v2` e constrói o
-índice FAISS. Docs interativas em http://localhost:8000/docs.
+O primeiro boot demora: baixa o modelo de embeddings
+(`paraphrase-multilingual-MiniLM-L12-v2`) e constrói o índice FAISS. Docs interativas em http://localhost:8000/docs.
 
 ## 5. Gateway WhatsApp
 

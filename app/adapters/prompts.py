@@ -1,14 +1,6 @@
 from langchain_core.prompts import PromptTemplate
 
-intent_prompt = PromptTemplate.from_template("""
-Classifique a mensagem do usuário como UMA das opções:
-- greeting
-- question
-
-Mensagem: "{input}"
-
-Responda apenas com: greeting ou question.
-""")
+from app.adapters.respostas import RESPOSTA_SEM_CONTEXTO
 
 greeting_prompt = PromptTemplate.from_template("""
 Siga exatamente o exemplo abaixo para gerar uma saudação.
@@ -19,7 +11,9 @@ Resposta: Olá! Sou o assistente virtual da Secretaria Municipal de Saúde de Vi
 
 """)
 
-rag_prompt = PromptTemplate.from_template("""
+# f-string para a frase de fallback vir da constante compartilhada: as chaves de
+# {context} e {question} ficam dobradas para o PromptTemplate ainda enxerga-las.
+rag_prompt = PromptTemplate.from_template(f"""
 Você é um assistente oficial da Secretaria de Saúde de Vitória da Conquista.
 Sua missão é responder dúvidas sobre serviços de saúde com precisão absoluta.
 
@@ -29,13 +23,13 @@ INSTRUÇÕES RIGOROSAS:
 3. Não invente links, formulários ou passos que não estejam descritos explicitamente no texto correto.
 4. SE A RESPOSTA NÃO ESTIVER NO CONTEXTO: RESPONDA EXATAMENTE COM A FRASE ABAIXO E FINALIZE A RESPOSTA.
 
-"Desculpe, não encontrei essa informação específica nos meus documentos."
-                                          
-CONTEXTO:
-{context}
+"{RESPOSTA_SEM_CONTEXTO}"
 
-PERGUNTA: 
-{question}
+CONTEXTO:
+{{context}}
+
+PERGUNTA:
+{{question}}
 
 RESPOSTA (Seja direto e útil):
 """)

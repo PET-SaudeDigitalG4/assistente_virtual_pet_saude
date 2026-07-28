@@ -29,9 +29,6 @@ Caminho resolvido a partir de `__file__`, então independe do diretório de exec
 Levanta `FileNotFoundError` se a pasta não existir. `glob="*.txt"` é raso — arquivos
 em subpastas de `data/servicos/` são ignorados.
 
-> `app/config.py` define `BASE_DIR = "../app/data/servicos"`, que **não** corresponde
-> ao caminho real usado e não é lido por ninguém. É código morto.
-
 ### 2. Chunking — `app/adapters/splitter.py`
 
 `RecursiveCharacterTextSplitter`:
@@ -48,12 +45,19 @@ tendem a sobreviver inteiros — bom para respostas de endereço/horário.
 
 ### 3. Embeddings — `app/adapters/embeddings.py`
 
-`HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")`
+Padrão: `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, sobrescrevível
+pela variável `EMBEDDINGS_MODEL`.
 
-Modelo de 384 dimensões, roda em CPU. Baixado do Hub no primeiro uso e cacheado em
-`~/.cache/huggingface`. É um modelo majoritariamente treinado em inglês aplicado a
-texto em português — funciona, mas é um ponto óbvio de melhoria (ver
-[doc 10](10-problemas-conhecidos.md)).
+Modelo de 384 dimensões, roda em CPU, baixado do Hub no primeiro uso e cacheado em
+`~/.cache/huggingface`. Substituiu `all-MiniLM-L6-v2`, que é treinado majoritariamente em
+inglês enquanto a base inteira está em português. É o equivalente multilíngue da mesma
+família e não exige prefixo de `query:`/`passage:` como os modelos E5 — a troca é só o
+nome do modelo, sem mudança no pipeline.
+
+> A melhora não foi medida. Só dá para comprovar rodando o RAG com o modelo baixado e
+> comparando respostas antes/depois num conjunto de perguntas reais. Se a recuperação
+> piorar, `EMBEDDINGS_MODEL=sentence-transformers/all-MiniLM-L6-v2` volta ao anterior sem
+> alterar código.
 
 ### 4. Vector store — `app/adapters/vector_store.py`
 
@@ -73,9 +77,9 @@ serviços — daí a instrução explícita no prompt para identificar o serviç
 
 ```mermaid
 flowchart LR
-    Q[pergunta] --> C[classify_input]
-    C -->|greeting| G[greeting_response]
-    C -->|question| R[build_rag_chain]
+    Q[pergunta] --> C{e_saudacao?}
+    C -->|sim| G[greeting_response]
+    C -->|não| R[build_rag_chain]
     R --> RET[retriever k=10]
     RET --> P[rag_prompt]
     P --> LLM[ChatGroq]
@@ -93,17 +97,25 @@ flowchart LR
 
 Sem `GROQ_API_KEY` no ambiente, levanta `ValueError`.
 
-### `classify_input(llm, text)`
+### `e_saudacao(texto)` — `app/core/intencao.py`
 
-Chama o LLM com `intent_prompt` para classificar a mensagem como `greeting` ou
-`question`. Custa uma chamada extra de LLM **em toda mensagem de texto livre**.
+Detecção local, sem LLM: normaliza (minúsculas, sem acento, sem pontuação nas bordas) e
+compara com um conjunto de saudações. Mensagem com mais de 3 palavras nunca é saudação,
+então `"Oi, onde fica o CEMERF?"` vai para o RAG.
+
+Substituiu `classify_input`, que gastava **uma chamada de LLM em toda mensagem de texto
+livre** só para decidir entre `greeting` e `question` — dobrando latência e custo para
+reconhecer "oi".
+
+Falso negativo é barato: uma saudação fora da lista vira pergunta, o RAG não acha nada e o
+menu é reexibido. Falso positivo seria caro — engoliria a pergunta do cidadão — e é o que
+o limite de palavras evita.
 
 ### `run_rag(retriever, question)`
 
 1. Pergunta vazia → `"Digite uma pergunta válida."`
-2. Classifica a intenção.
-3. `greeting` → resposta fixa de saudação gerada pelo `greeting_prompt`.
-4. Caso contrário → cadeia RAG:
+2. `e_saudacao` → resposta de saudação gerada pelo `greeting_prompt`.
+3. Caso contrário → cadeia RAG:
    `{context: retriever, question: passthrough} | rag_prompt | llm | StrOutputParser()`
 
 `build_rag_chain` é reconstruída a cada chamada (barato — é só composição de
@@ -113,7 +125,6 @@ runnables; o LLM vem do cache).
 
 | Prompt | Papel |
 |---|---|
-| `intent_prompt` | Classifica em `greeting` \| `question`. Resposta de uma palavra |
 | `greeting_prompt` | Few-shot de um exemplo; gera a saudação institucional padrão |
 | `rag_prompt` | Prompt principal do RAG |
 
@@ -134,18 +145,36 @@ A frase de fallback do item 4 é o gancho da heurística de falha em
 ```python
 class NLPService:
     def __init__(self, retriever): ...
-    def process(self, text, user_name=None) -> str
+    def process(self, text, user_name=None) -> Optional[str]
 ```
 
-Além de chamar `run_rag`, personaliza a saudação:
+**Devolve `None` quando o RAG não achou resposta** — texto vazio ou a frase de fallback.
+Isso poupa o chamador de adivinhar a falha procurando palavras dentro da resposta, que era
+o comportamento anterior e descartava resposta boa por conter "desculpe".
+
+A detecção mora em `app/adapters/respostas.py`:
+
+```python
+RESPOSTA_SEM_CONTEXTO = "Desculpe, não encontrei essa informação específica nos meus documentos."
+NUCLEO_SEM_CONTEXTO   = "não encontrei essa informação"
+
+def sem_contexto(resposta: str) -> bool
+```
+
+O módulo não importa nada — de propósito. Quem precisa saber "o RAG falhou?" não deveria
+carregar LangChain para descobrir, e é isso que permite testar a máquina de estados no CI.
+`rag_prompt` interpola `RESPOSTA_SEM_CONTEXTO`, então a frase que o modelo é instruído a
+emitir e a frase que o código reconhece são literalmente a mesma.
+
+O casamento é pelo núcleo, não por igualdade exata: o modelo às vezes devolve a frase com
+aspas, ponto final a mais ou quebra de linha.
+
+Com resposta válida, personaliza a saudação:
 
 | Condição na resposta | Substituição |
 |---|---|
 | contém a saudação institucional completa | `"Oi, {nome}! 😊\nComo posso te ajudar?"` |
 | contém `"Olá!"` | troca `"Olá!"` por `"Oi, {nome}! 😊"` |
-
-`nlp_service.py` importa `setup_system` sem usar — import morto que faz o módulo
-carregar `app.main` desnecessariamente.
 
 ## Caminho alternativo: Gradio
 
@@ -155,11 +184,10 @@ conversa em nenhum caminho do sistema) e chama `run_rag` direto.
 
 ## Testes
 
-`app/test/` contém três scripts manuais, não testes automatizados (sem pytest, sem
-asserts):
+`app/test/` foi removido: eram três scripts de inspeção manual (só `print`, sem assert),
+um deles quebrado havia tempo por importar um módulo inexistente. Os testes reais vivem
+em `tests/` — ver [doc 11](11-ci.md).
 
-| Arquivo | O que faz | Estado |
-|---|---|---|
-| `test_splitter.py` | Imprime todos os chunks gerados | funciona |
-| `test_faiss.py` | Carrega `./data/servicos` e monta um FAISS | depende do cwd ser a raiz |
-| `test_retriever.py` | Importa `src.adapters.core.vector_store` | **quebrado** — módulo inexistente |
+Do pipeline RAG, o que roda no CI é o que não precisa de LangChain: `e_saudacao` e
+`sem_contexto`. Recuperação e qualidade de resposta continuam sem cobertura automatizada,
+porque exigiriam baixar o modelo e ter chave da Groq.
