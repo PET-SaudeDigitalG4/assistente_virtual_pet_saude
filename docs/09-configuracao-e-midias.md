@@ -128,9 +128,9 @@ imagem `.jpeg` configurada hoje. Ver [doc 10](10-problemas-conhecidos.md).
 
 | Valor | Local | Observação |
 |---|---|---|
-| `EVOLUTION_URL`, `INSTANCE`, `API_KEY` | hardcoded em `api/routes/webhook.py` | Deveria vir do `.env` — inclui uma chave de API no código versionado |
+| `EVOLUTION_URL`, `EVOLUTION_INSTANCE`, `EVOLUTION_API_KEY` | `.env`, lidas em `api/routes/webhook.py` | Sem default para a chave: em branco falha ao enviar |
+| `WEBHOOK_TOKEN`, `TWILIO_AUTH_TOKEN`, `PUBLIC_BASE_URL` | `.env`, lidas em `api/security.py` | Autenticação das rotas de entrada |
 | Modelo do LLM, temperatura, `max_tokens` | hardcoded em `app/core/rag_pipeline.py` | |
 | Modelo de embeddings | hardcoded em `app/adapters/embeddings.py` | |
 | `k` do retriever | default `10` em `create_retriever` | |
 | `chunk_size` / `chunk_overlap` | hardcoded em `app/adapters/splitter.py` | |
-| Números Twilio (`from_`/`to`) | hardcoded em `api/services/twilio_connection.py` | Script de exemplo, não usado em produção |
