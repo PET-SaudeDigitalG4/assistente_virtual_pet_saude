@@ -32,7 +32,7 @@ Reduzir a demanda por telefone/presencial para dúvidas repetitivas:
 | Gateway WhatsApp | Evolution API (self-hosted) **ou** Twilio WhatsApp — ambos suportados |
 | Backend | FastAPI: estado da conversa, menus, persistência, auditoria |
 | LLM | Groq — `llama-3.3-70b-versatile` |
-| Vetores | FAISS em memória, embeddings HuggingFace `all-MiniLM-L6-v2` |
+| Vetores | FAISS em memória, embeddings HuggingFace `paraphrase-multilingual-MiniLM-L12-v2` |
 | Banco | PostgreSQL via SQLAlchemy + Alembic |
 
 ## Glossário

@@ -1,14 +1,6 @@
 from fastapi import Header, HTTPException
 
-from api.db.database import SessionLocal
 from api.security import token_webhook_valido
-
-def get_session():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 def exigir_token(x_webhook_token: str = Header(default=None)):
     """Protege /messages/receive.

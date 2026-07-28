@@ -2,16 +2,6 @@ from langchain_core.prompts import PromptTemplate
 
 from app.adapters.respostas import RESPOSTA_SEM_CONTEXTO
 
-intent_prompt = PromptTemplate.from_template("""
-Classifique a mensagem do usuário como UMA das opções:
-- greeting
-- question
-
-Mensagem: "{input}"
-
-Responda apenas com: greeting ou question.
-""")
-
 greeting_prompt = PromptTemplate.from_template("""
 Siga exatamente o exemplo abaixo para gerar uma saudação.
 
