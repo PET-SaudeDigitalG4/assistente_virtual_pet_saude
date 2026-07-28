@@ -49,15 +49,14 @@ Padrão: `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, sobrescr
 pela variável `EMBEDDINGS_MODEL`.
 
 Modelo de 384 dimensões, roda em CPU, baixado do Hub no primeiro uso e cacheado em
-`~/.cache/huggingface`. Substituiu `all-MiniLM-L6-v2`, que é treinado majoritariamente em
-inglês enquanto a base inteira está em português. É o equivalente multilíngue da mesma
-família e não exige prefixo de `query:`/`passage:` como os modelos E5 — a troca é só o
-nome do modelo, sem mudança no pipeline.
+`~/.cache/huggingface`. É multilíngue porque a base inteira está em português, e não exige
+prefixo de `query:`/`passage:` como os modelos E5 — trocar por outro da mesma família é só
+mudar o nome.
 
-> A melhora não foi medida. Só dá para comprovar rodando o RAG com o modelo baixado e
-> comparando respostas antes/depois num conjunto de perguntas reais. Se a recuperação
-> piorar, `EMBEDDINGS_MODEL=sentence-transformers/all-MiniLM-L6-v2` volta ao anterior sem
-> alterar código.
+> A qualidade de recuperação deste modelo **não foi medida** neste projeto. Comprovar exige
+> rodar o RAG com o modelo baixado e comparar respostas num conjunto de perguntas com
+> resposta conhecida. `EMBEDDINGS_MODEL` troca o modelo sem alterar código, então
+> experimentar é barato.
 
 ### 4. Vector store — `app/adapters/vector_store.py`
 
@@ -103,9 +102,8 @@ Detecção local, sem LLM: normaliza (minúsculas, sem acento, sem pontuação n
 compara com um conjunto de saudações. Mensagem com mais de 3 palavras nunca é saudação,
 então `"Oi, onde fica o CEMERF?"` vai para o RAG.
 
-Substituiu `classify_input`, que gastava **uma chamada de LLM em toda mensagem de texto
-livre** só para decidir entre `greeting` e `question` — dobrando latência e custo para
-reconhecer "oi".
+Deliberadamente local: classificar intenção com o LLM custaria uma chamada de Groq em
+**toda** mensagem de texto livre, dobrando latência e custo para reconhecer "oi".
 
 Falso negativo é barato: uma saudação fora da lista vira pergunta, o RAG não acha nada e o
 menu é reexibido. Falso positivo seria caro — engoliria a pergunta do cidadão — e é o que
@@ -149,8 +147,8 @@ class NLPService:
 ```
 
 **Devolve `None` quando o RAG não achou resposta** — texto vazio ou a frase de fallback.
-Isso poupa o chamador de adivinhar a falha procurando palavras dentro da resposta, que era
-o comportamento anterior e descartava resposta boa por conter "desculpe".
+Sinalizar a falha assim poupa o chamador de adivinhá-la procurando palavras dentro da
+resposta, heurística que descarta resposta boa por conter "desculpe".
 
 A detecção mora em `app/adapters/respostas.py`:
 
