@@ -4,23 +4,25 @@ Levantamento por leitura do código no estado atual do `main`. Ordenado por impa
 
 ## Bloqueadores
 
-### 1. Cadeia de migrações quebrada
+### ~~1. Cadeia de migrações quebrada~~ — CORRIGIDO
 
-`api/alembic/versions/f36d189f393f_merge_heads.py` declara
-`down_revision = ('a8f3b1c2d4e5', '7f566e777933')`, mas **`a8f3b1c2d4e5` não existe**
-em `versions/`. `alembic upgrade head` falha, e a tabela `flow_media` — presente no ORM
-— não é criada por nenhuma migração do repositório.
+`f36d189f393f_merge_heads.py` apontava para a revisão `a8f3b1c2d4e5`, que não existia em
+`versions/`. `alembic upgrade head` falhava com `KeyError`, e a tabela `flow_media` —
+presente no ORM — não era criada em ambiente novo.
 
-Detectado pelo job `migracoes` do CI (ver [doc 11](11-ci.md)), que fica **vermelho até
-esta correção**.
+Causa: as revisões `a8f3b1c2d4e5` e `b9c4d6e7f8a1` foram apagadas por engano no commit
+`f2222b4` (o mesmo refactor que trocou o roteamento de menus). Não era uma migração que
+faltou ser escrita — era arquivo perdido.
 
-Opções:
-- recriar a revisão faltante `a8f3b1c2d4e5` com o `create_table('flow_media')`; ou
-- apagar o merge e gerar uma revisão nova linear a partir de `7f566e777933` com
-  `alembic revision --autogenerate`.
+Correção: restauradas a partir de `558cf66`, o commit que as criou. Preserva bancos já
+carimbados em qualquer uma das duas revisões — reescrever a cadeia teria quebrado
+exatamente esses. Head único de volta em `b9c4d6e7f8a1`; `alembic upgrade head` roda
+limpo do zero.
 
-Impacto hoje: bancos existentes que já tinham a tabela seguem funcionando; um ambiente
-novo sobe sem `flow_media` e cai no fallback da cascata de imagens.
+O job `migracoes` do CI cobre os dois modos de falha agora: `alembic heads` (grafo) e
+`alembic upgrade head` em sqlite descartável (DDL). Ver [doc 11](11-ci.md).
+
+## Segurança
 
 ### 2. Webhooks sem autenticação
 

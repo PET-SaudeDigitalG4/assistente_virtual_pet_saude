@@ -127,15 +127,25 @@ do `.ini`. `compare_type=True` está ativo nos dois modos.
 | `c017765344ef` | Inicial: `users`, `chats`, `messages` | — |
 | `725740865e73` | `system_configs`, `audit_logs` | `c017765344ef` |
 | `7f566e777933` | `users.name`, `users.state` | `725740865e73` |
+| `a8f3b1c2d4e5` | `flow_media` + índice + seed da imagem `CALENDARIO` | `725740865e73` |
 | `f36d189f393f` | Merge heads (no-op) | `('a8f3b1c2d4e5', '7f566e777933')` |
+| `b9c4d6e7f8a1` | Recria `flow_media` e reinsere o seed, ambos idempotentes | `f36d189f393f` |
+| `c7d8e9fa0b1c` | Atualiza a URL do seed `CALENDARIO` para o Supabase vigente | `b9c4d6e7f8a1` |
 
-> ⚠️ **`a8f3b1c2d4e5` não existe** em `api/alembic/versions/`. É o ramo que deveria
-> criar a tabela `flow_media` — que está no ORM mas em nenhuma migração presente.
-> Consequência: `alembic upgrade head` falha com `KeyError`/revisão não encontrada, e,
-> num banco criado do zero pelas migrações existentes, `flow_media` não existe.
-> `FlowMediaService` já trata isso: captura `ProgrammingError`/`OperationalError`,
-> faz rollback e cai para o próximo nível da cascata de resolução de imagem.
-> Ver [doc 10](10-problemas-conhecidos.md) para as opções de correção.
+Head único: `c7d8e9fa0b1c`.
+
+A cadeia é ramificada: a partir de `725740865e73` saem dois ramos —
+`7f566e777933` (colunas de `users`) e `a8f3b1c2d4e5` (`flow_media`) — reunidos pelo
+merge `f36d189f393f`.
+
+`b9c4d6e7f8a1` refaz o trabalho de `a8f3b1c2d4e5` com guardas (`inspector.get_table_names()`
+antes de criar, `SELECT` antes de inserir). Existe para consertar bancos que passaram pelo
+merge sem terem recebido a tabela; é no-op num banco íntegro.
+
+> Histórico: as revisões `a8f3b1c2d4e5` e `b9c4d6e7f8a1` foram apagadas por engano no
+> commit `f2222b4`, deixando o merge apontando para uma revisão inexistente e quebrando
+> `alembic upgrade head`. Restauradas a partir de `558cf66`. O job `migracoes` do CI
+> (ver [doc 11](11-ci.md)) agora impede que isso se repita.
 
 ### Comandos
 
