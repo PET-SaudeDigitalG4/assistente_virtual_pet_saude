@@ -51,6 +51,7 @@ O índice é construído **uma vez, na subida do processo**, e fica em memória
 ## Camadas do `api/`
 
 ```
+security.py   Autenticação das rotas de entrada. Sem import de app/ nem services.
 routes/       Adaptadores HTTP (Evolution, Twilio, REST). Sem regra de negócio.
 services/     Regra de negócio:
                 chat_service.py     máquina de estados + orquestração
@@ -82,15 +83,17 @@ main.py              setup_system() → {"servicos": retriever}
 ## Ciclo de vida de uma mensagem
 
 1. Gateway entrega a mensagem no webhook correspondente.
-2. A rota extrai `id_wpp` e `text` e instancia `ChatService(db, nlp_service)`.
-3. `ChatService.process_message`:
+2. A rota autentica a requisição via `api/security.py` — assinatura Twilio ou segredo
+   compartilhado. Falhou, responde 403 e nada mais acontece.
+3. A rota extrai `id_wpp` e `text` e instancia `ChatService(db, nlp_service)`.
+4. `ChatService.process_message`:
    1. normaliza o texto (`_clean_text`);
    2. busca/cria `User` e `Chat`;
    3. grava log em `audit_logs` (`MESSAGE_RECEIVED`);
    4. persiste a mensagem do usuário;
    5. decide a resposta pela máquina de estados (ver [doc 05](05-fluxo-conversa.md));
    6. persiste a resposta do bot e faz `commit`.
-4. A rota converte `ChatResponse` no formato do gateway:
+5. A rota converte `ChatResponse` no formato do gateway:
    - Evolution: chama `send_image` ou `send_text` via HTTP;
    - Twilio: devolve TwiML XML com `<Body>` e opcional `<Media>`;
    - REST: devolve JSON `MessageOut`.

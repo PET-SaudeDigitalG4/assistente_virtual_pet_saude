@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from api.schemas.schemas import MessageSchema, MessageOut
-from api.dependencies.dependencies import get_session
+from api.dependencies.dependencies import exigir_token, get_session
 from api.services.chat_service import ChatService
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
 
-@router.post("/receive", response_model=MessageOut)
+@router.post("/receive", response_model=MessageOut, dependencies=[Depends(exigir_token)])
 async def receive_message(
     payload: MessageSchema,
     request: Request,

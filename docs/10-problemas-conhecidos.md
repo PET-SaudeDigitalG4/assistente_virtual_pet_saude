@@ -24,35 +24,46 @@ O job `migracoes` do CI cobre os dois modos de falha agora: `alembic heads` (gra
 
 ## Segurança
 
-### 2. Webhooks sem autenticação
+### ~~2. Webhooks sem autenticação~~ — CORRIGIDO
 
-`/twilio/webhook` e `/evolution_webhook` aceitam qualquer POST. Sem validação de
-assinatura do Twilio (`X-Twilio-Signature`) nem de token/apikey da Evolution API,
-qualquer um que conheça a URL injeta mensagens em nome de qualquer `id_wpp` — e
-consome cota da Groq.
+As três rotas de entrada aceitavam qualquer POST. Sem validação de assinatura do Twilio
+nem de segredo da Evolution API, qualquer um que descobrisse a URL injetava mensagens em
+nome de qualquer `id_wpp` — e consumia cota da Groq.
 
-Correção: `twilio.request_validator.RequestValidator` na rota Twilio; header secreto
-compartilhado (ou allowlist de IP) na rota Evolution.
+Correção em `api/security.py`, aplicada aos **três** endpoints:
 
-### 3. Credencial em código versionado
+| Rota | Verificação |
+|---|---|
+| `/twilio/webhook` | `RequestValidator` do SDK oficial sobre `X-Twilio-Signature` |
+| `/evolution_webhook` | Segredo compartilhado (`?token=` ou `X-Webhook-Token`), `hmac.compare_digest` |
+| `/messages/receive` | Mesmo segredo, via dependência `exigir_token` |
 
-```python
-# api/routes/webhook.py
-EVOLUTION_URL = "http://localhost:8080"
-INSTANCE = "meu-wpp"
-API_KEY = "masterkey"
-```
+`/messages/receive` entrou junto porque não estava no relato original mas entrega
+exatamente a mesma capacidade: fechar só os dois webhooks teria deixado a porta aberta
+ao lado. Tudo falha fechado — variável ausente nega, nunca libera.
 
-Mover para `.env`. Se essa chave já foi usada em algum ambiente real, rotacione.
+Coberto por `tests/test_security.py`. Ver [doc 04](04-api-referencia.md).
 
-### 4. Script com efeito colateral no import
+### ~~3. Credencial em código versionado~~ — CORRIGIDO
 
-`api/services/twilio_connection.py` executa no nível do módulo: lê
-`os.environ["TWILIO_ACCOUNT_SID"]` (`KeyError` se faltar) e **envia uma mensagem
-WhatsApp de verdade** para um número fixo. Hoje nada o importa, então não dispara — mas
-o primeiro `import` acidental manda mensagem em produção.
+`api/routes/webhook.py` trazia `EVOLUTION_URL`, `INSTANCE` e `API_KEY = "masterkey"`
+hardcoded. Agora vêm de `EVOLUTION_URL`, `EVOLUTION_INSTANCE` e `EVOLUTION_API_KEY`, sem
+segredo default — a chave em branco falha ao enviar, em vez de tentar um valor conhecido.
 
-Correção: envolver em `if __name__ == "__main__":` ou mover para `scripts/`.
+> Se `masterkey` chegou a ser usada em alguma instância real da Evolution API, **rotacione**.
+> O valor está no histórico do git e não sai de lá.
+
+### ~~4. Script com efeito colateral no import~~ — CORRIGIDO
+
+`api/services/twilio_connection.py` executava no nível do módulo: lia
+`os.environ["TWILIO_ACCOUNT_SID"]` (`KeyError` se faltasse) e **enviava uma mensagem
+WhatsApp de verdade** para um número fixo. Nada o importava, mas o primeiro `import`
+acidental mandaria mensagem em produção.
+
+Removido. Era o exemplo copiado da documentação da Twilio, com `content_sid` e números
+fixos, sem nenhum uso no projeto — envelopar em `__main__` manteria código morto com uma
+arma carregada dentro. Recuperável em `git show 8c8ad52:api/services/twilio_connection.py`
+se algum dia servir de referência.
 
 ## Correção e comportamento
 

@@ -1,21 +1,34 @@
 # 04 — Referência da API
 
-Base: `http://localhost:8000`. Nenhum endpoint exige autenticação hoje
-(ver [doc 10](10-problemas-conhecidos.md)).
+Base: `http://localhost:8000`.
 
 ## Rotas registradas
 
-| Método | Caminho | Origem | Arquivo |
-|---|---|---|---|
-| POST | `/messages/receive` | REST genérico / testes | `api/routes/routes.py` |
-| POST | `/twilio/webhook` | Twilio WhatsApp | `api/routes/twilio_webhook.py` |
-| POST | `/evolution_webhook` | Evolution API | `api/routes/webhook.py` |
+| Método | Caminho | Origem | Autenticação | Arquivo |
+|---|---|---|---|---|
+| POST | `/messages/receive` | REST genérico / testes | Header `X-Webhook-Token` | `api/routes/routes.py` |
+| POST | `/twilio/webhook` | Twilio WhatsApp | Header `X-Twilio-Signature` | `api/routes/twilio_webhook.py` |
+| POST | `/evolution_webhook` | Evolution API | `?token=` ou `X-Webhook-Token` | `api/routes/webhook.py` |
+
+Toda a verificação vive em `api/security.py`, que **falha fechado**: variável de ambiente
+ausente, header ausente ou token errado resultam em recusa. Nenhuma das três rotas tem
+modo aberto.
+
+| Falha | Resposta |
+|---|---|
+| Token ausente ou errado em `/messages/receive` | `403 {"detail": "Token invalido"}` |
+| Assinatura ausente ou inválida em `/twilio/webhook` | `403 {"detail": "Assinatura Twilio invalida"}` |
+| Token ausente ou errado em `/evolution_webhook` | `403 {"status": "forbidden"}` |
 
 ---
 
 ## POST /messages/receive
 
 Endpoint canônico. Recebe JSON, devolve JSON.
+
+**Header obrigatório**: `X-Webhook-Token: <WEBHOOK_TOKEN>`.
+Sem ele a rota entregaria a mesma capacidade dos webhooks — falar como qualquer
+`id_wpp` e consumir cota da Groq — sem exigir nada.
 
 **Request** (`MessageSchema`):
 
@@ -54,6 +67,11 @@ devolve 200 com `response = "Desculpe, ocorreu um erro interno."`.
 
 Recebe `application/x-www-form-urlencoded` no formato do Twilio.
 
+**Autenticação**: header `X-Twilio-Signature`, validado com `RequestValidator` do SDK
+oficial contra o `TWILIO_AUTH_TOKEN`. A assinatura cobre a URL chamada **mais** todos os
+campos do formulário, então alterar o `Body` ou o `From` invalida a requisição. Atrás de
+túnel ou proxy, defina `PUBLIC_BASE_URL` — ver [doc 03](03-instalacao-e-execucao.md).
+
 | Campo do form | Uso |
 |---|---|
 | `Body` | texto da mensagem |
@@ -81,6 +99,11 @@ O bloco `<Media>` só aparece quando `image_url` está preenchido.
 ## POST /evolution_webhook
 
 Recebe o payload de eventos da Evolution API.
+
+**Autenticação**: segredo compartilhado, em `?token=<WEBHOOK_TOKEN>` na URL configurada
+no manager ou no header `X-Webhook-Token`. A Evolution API não assina os payloads que
+envia — não há assinatura para conferir, só o segredo. Comparação com
+`hmac.compare_digest`.
 
 Payload esperado (recorte):
 
