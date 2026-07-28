@@ -76,7 +76,7 @@ cd ..
 ```
 
 A cadeia é ramificada (dois ramos a partir de `725740865e73`, reunidos por um merge) e
-termina no head `b9c4d6e7f8a1`. `alembic upgrade head` cria as 7 tabelas e insere o seed
+termina no head `c7d8e9fa0b1c`. `alembic upgrade head` cria as 7 tabelas e insere o seed
 da imagem `CALENDARIO` em `flow_media`. Ver [doc 07](07-banco-de-dados.md).
 
 ## 4. Subir o backend
