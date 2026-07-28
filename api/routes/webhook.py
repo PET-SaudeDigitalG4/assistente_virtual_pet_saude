@@ -1,16 +1,19 @@
+import os
+
 import requests
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from api.db.database import get_db
+from api.security import token_webhook_valido
 from api.services.chat_service import ChatService
 
 router = APIRouter()
 
-EVOLUTION_URL = "http://localhost:8080" 
-INSTANCE = "meu-wpp"                  
-API_KEY = "masterkey"                 
+EVOLUTION_URL = os.getenv("EVOLUTION_URL", "http://localhost:8080")
+INSTANCE = os.getenv("EVOLUTION_INSTANCE", "meu-wpp")
+API_KEY = os.getenv("EVOLUTION_API_KEY", "")
 
 def send_text(number: str, text: str):
     url = f"{EVOLUTION_URL}/message/sendText/{INSTANCE}"
@@ -20,7 +23,8 @@ def send_text(number: str, text: str):
         json={
             "number": number,
             "text": text
-        }
+        },
+        timeout=15
     )
 
 def send_image(number: str, image_url: str, caption: str = ""):
@@ -52,8 +56,14 @@ def send_image(number: str, image_url: str, caption: str = ""):
 @router.post("/evolution_webhook")
 async def evolution_webhook(request: Request, db: Session = Depends(get_db)):
     try:
+        # A Evolution API nao assina o payload. O segredo vai na URL configurada
+        # no manager (?token=...) ou no header X-Webhook-Token.
+        token = request.headers.get("X-Webhook-Token") or request.query_params.get("token")
+        if not token_webhook_valido(token):
+            return JSONResponse(content={"status": "forbidden"}, status_code=403)
+
         body = await request.json()
-        
+
         event_type = body.get("event", "")
         if event_type and "messages.upsert" not in event_type:
              return JSONResponse(content={"status": "ignored", "reason": "not a message event"})
