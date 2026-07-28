@@ -138,8 +138,14 @@ mensagem de volta pela Evolution API:
 | `image_url` preenchido | `POST {EVOLUTION_URL}/message/sendMedia/{INSTANCE}` — imagem com `caption` = texto |
 | Só texto | `POST {EVOLUTION_URL}/message/sendText/{INSTANCE}` |
 
-**Response 200**: `{"status": "success"}`
-**Response 500**: `{"status": "error", "message": "<detalhe>"}`
+Falhando o envio da imagem, a rota tenta o texto puro — o cidadão recebe a resposta mesmo
+sem a foto.
+
+| Situação | Resposta |
+|---|---|
+| Entregue | `200 {"status": "success"}` |
+| Gateway recusou a entrega | `502 {"status": "error", "message": "falha ao entregar a resposta"}` |
+| Exceção não tratada | `500 {"status": "error", "message": "<detalhe>"}` |
 
 ---
 

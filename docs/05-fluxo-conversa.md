@@ -48,20 +48,31 @@ Aceito → grava `users.name`, vai para `WAITING_MAIN_MENU` e já exibe o menu.
 | Comando | Efeito |
 |---|---|
 | `menu` ou `/menu` | Volta ao menu principal. Se o usuário ainda não tem nome, cai em `WAITING_NAME` |
-| `/resetar` | `state = NEW` e responde "Conversa reiniciada!". **Não apaga o nome nem o histórico** |
+| `/resetar` | `state = NEW` e **limpa o nome** — a próxima mensagem recomeça pelo onboarding. O histórico de mensagens permanece |
 | `0` | Dentro de um submenu, volta ao nível anterior (definido no JSON) |
 
-## Normalização do texto (`_clean_text`)
+## Normalização da entrada
+
+**Texto** (`_clean_text`): apenas colapsa espaços.
 
 ```python
-if ":" in text:
-    text = text.split(":")[-1]     # descarta prefixo antes do último ":"
-return " ".join(text.strip().split())  # colapsa espaços
+return " ".join((text or "").strip().split())
 ```
 
-O corte no `:` existe porque alguns gateways prefixam a mensagem
-(ex.: `whatsapp:oi`). Efeito colateral: qualquer mensagem legítima com `:` perde a
-parte anterior (`"Horário: 8 às 17"` vira `"8 às 17"`).
+Uma versão anterior cortava tudo antes do último `:` para remover prefixo de gateway, o
+que mutilava qualquer pergunta legítima com dois-pontos. Se um gateway voltar a prefixar,
+o tratamento é na rota — a camada que conhece o formato — e não aqui.
+
+**Identificador** (`normalizar_id_wpp`): reduz aos dígitos.
+
+| Entrada | `id_wpp` gravado |
+|---|---|
+| `whatsapp:+5577999999999` (Twilio) | `5577999999999` |
+| `5577999999999` (Evolution) | `5577999999999` |
+| `+55 77 99999-9999` | `5577999999999` |
+
+Sem isso o mesmo cidadão vira dois usuários, com nome e estado independentes, conforme o
+gateway que atendeu.
 
 ## Tratamento de uma mensagem em estado de menu
 
@@ -72,13 +83,12 @@ Estando o usuário num estado presente em `menu_texts.json`:
 2. **A entrada é um número, mas não é opção válida?** → "Opção inválida" + reexibe o menu.
 3. **A entrada é texto livre?**
    - Se `maintenance_mode == "true"` em `system_configs` → "O Chat Bot está em manutenção."
-   - Senão → manda para o RAG. Se a resposta contiver alguma das palavras de falha
-     (`desculpe`, `sinto muito`, `não encontrei`, `não entendi`, `inválido`) ou vier
-     vazia, trata como fracasso e reexibe o menu. Caso contrário, devolve
+   - Senão → manda para o RAG. `NLPService.process` devolve `None` quando não achou
+     resposta nos documentos; nesse caso o menu é reexibido. Com resposta, devolve
      `resposta + menu atual`.
 
-Essa heurística de detecção de falha por substring é frágil: uma resposta correta que
-contenha "desculpe" é descartada. Ver [doc 10](10-problemas-conhecidos.md).
+Exceção do RAG (Groq fora do ar, timeout) é capturada, logada com stack trace e tratada
+como "sem resposta" — a conversa segue no menu em vez de quebrar.
 
 ## Menu dinâmico (`menu_texts.json`)
 
