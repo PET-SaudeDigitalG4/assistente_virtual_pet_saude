@@ -50,8 +50,8 @@ Na prática há **um chat por usuário**: `_get_or_create_chat` sempre pega o pr
 | `sender` | String, not null | `"user"` ou `"bot"` |
 | `created_at` | DateTime | |
 
-Guarda conteúdo enviado por cidadãos sobre saúde — dado sensível.
-Ver [doc 10](10-problemas-conhecidos.md).
+Guarda conteúdo enviado por cidadãos sobre saúde — dado pessoal sensível, hoje sem prazo
+de retenção nem rotina de expurgo. Ver [doc 10](10-problemas-conhecidos.md).
 
 ### `system_configs`
 
@@ -142,10 +142,11 @@ merge `f36d189f393f`.
 antes de criar, `SELECT` antes de inserir). Existe para consertar bancos que passaram pelo
 merge sem terem recebido a tabela; é no-op num banco íntegro.
 
-> Histórico: as revisões `a8f3b1c2d4e5` e `b9c4d6e7f8a1` foram apagadas por engano no
-> commit `f2222b4`, deixando o merge apontando para uma revisão inexistente e quebrando
-> `alembic upgrade head`. Restauradas a partir de `558cf66`. O job `migracoes` do CI
-> (ver [doc 11](11-ci.md)) agora impede que isso se repita.
+> ⚠️ Não apague arquivo de `versions/`, mesmo parecendo redundante. Um merge aponta para
+> os dois pais pelo id: sumindo o arquivo, `alembic upgrade head` morre com `KeyError` e
+> nenhum ambiente novo sobe. Já aconteceu neste repositório, num refactor que levou duas
+> revisões junto sem querer. O job `migracoes` do CI (ver [doc 11](11-ci.md)) pega isso
+> antes do merge do PR.
 
 ### Comandos
 
