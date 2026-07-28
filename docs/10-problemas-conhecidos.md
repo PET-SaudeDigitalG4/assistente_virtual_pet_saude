@@ -11,6 +11,9 @@ Levantamento por leitura do código no estado atual do `main`. Ordenado por impa
 em `versions/`. `alembic upgrade head` falha, e a tabela `flow_media` — presente no ORM
 — não é criada por nenhuma migração do repositório.
 
+Detectado pelo job `migracoes` do CI (ver [doc 11](11-ci.md)), que fica **vermelho até
+esta correção**.
+
 Opções:
 - recriar a revisão faltante `a8f3b1c2d4e5` com o `create_table('flow_media')`; ou
 - apagar o merge e gerar uma revisão nova linear a partir de `7f566e777933` com
@@ -138,12 +141,13 @@ com a base e atrasa cada deploy.
 | `api/dependencies/dependencies.py` | `get_session` duplica `get_db` |
 | `app/test/test_retriever.py` | Importa `src.adapters.core.vector_store`, que não existe |
 
-### 17. Sem testes automatizados
+### 17. Cobertura de testes mínima
 
-`app/test/` são scripts de inspeção manual (só `print`). Não há pytest, nem CI. Os
-pontos que mais pedem teste: máquina de estados do `ChatService`, `_clean_text`,
-validação de nome e a cascata de `_resolve_image_url` — todos puros ou facilmente
-isoláveis.
+`app/test/` são scripts de inspeção manual (só `print`). O único teste automatizado é
+`tests/test_menu_texts.py`, que valida a integridade de `menu_texts.json` (ver
+[doc 11](11-ci.md)). Ainda sem cobertura para: máquina de estados do `ChatService`,
+`_clean_text`, validação de nome e a cascata de `_resolve_image_url` — todos puros ou
+facilmente isoláveis, mas hoje só testáveis com o import pesado de `app.main`.
 
 ### 18. Dependência faltando
 

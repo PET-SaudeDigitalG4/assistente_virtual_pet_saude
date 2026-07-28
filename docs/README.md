@@ -18,6 +18,7 @@ busca semântica sobre documentos oficiais.
 | [08 — Base de Conhecimento](08-base-de-conhecimento.md) | Documentos em `data/servicos`, formato, como adicionar |
 | [09 — Configuração e Mídias](09-configuracao-e-midias.md) | `system_configs`, `flow_media`, imagens de fluxo |
 | [10 — Problemas Conhecidos](10-problemas-conhecidos.md) | Bugs abertos, dívidas técnicas, pontos de atenção |
+| [11 — Integração Contínua](11-ci.md) | GitHub Actions, testes, como rodar os checks localmente |
 
 ## Início rápido
 
@@ -41,6 +42,8 @@ api/          Backend FastAPI: rotas, serviços, modelos, migrações
 app/          Núcleo RAG: ingestão, splitter, embeddings, vector store, pipeline
 data/servicos Base de conhecimento (.txt) usada pelo RAG
 frontend/     App Gradio para teste local do RAG
+tests/        Testes automatizados (pytest)
 docs/         Esta documentação
-docker-compose.yaml  Evolution API + Postgres + Redis (gateway WhatsApp)
+.github/workflows/ci.yml  Pipeline de CI
+docker-compose.yaml       Evolution API + Postgres + Redis (gateway WhatsApp)
 ```

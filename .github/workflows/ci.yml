@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualidade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: api/requirements.txt
+
+      # app/requirements.txt fica de fora: torch/transformers/faiss passam de 2 GB
+      # e nenhum teste importa o pipeline RAG.
+      - name: Instalar dependencias
+        run: |
+          pip install -r api/requirements.txt
+          pip install pytest ruff
+
+      - name: Erros de sintaxe e nomes indefinidos
+        run: ruff check --select E9,F63,F7,F82 .
+
+      - name: Compilar todos os modulos
+        run: python -m compileall -q api app frontend tests
+
+      - name: Testes
+        run: pytest tests/ -q
+
+  migracoes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install alembic
+
+      # `alembic heads` resolve o grafo de revisoes sem conectar no banco.
+      # VERMELHO HOJE: f36d189f393f aponta para a8f3b1c2d4e5, que nao existe
+      # em api/alembic/versions/. Ver docs/10-problemas-conhecidos.md item 1.
+      - name: Cadeia de revisoes resolve
+        working-directory: api
+        env:
+          DATABASE_URL: sqlite:///ci.db
+        run: alembic heads
