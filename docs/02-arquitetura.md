@@ -62,7 +62,7 @@ services/     Regra de negócio:
 schemas/      Pydantic: MessageSchema (entrada), MessageOut / ChatResponse (saída)
 models/       SQLAlchemy: User, Chat, Message, SystemConfig, FlowMedia, AuditLog
 db/           Engine, SessionLocal, get_db
-dependencies/ get_session (idêntico a get_db — duplicação)
+dependencies/ exigir_token — dependência FastAPI de autenticação
 utils/        DbLogger (log em console + tabela audit_logs)
 alembic/      Migrações
 ```
@@ -71,14 +71,20 @@ alembic/      Migrações
 
 ```
 core/ingestion.py    DirectoryLoader sobre data/servicos/*.txt
-adapters/splitter.py RecursiveCharacterTextSplitter (1000/200)
-adapters/embeddings.py  HuggingFaceEmbeddings all-MiniLM-L6-v2
-adapters/vector_store.py FAISS.from_documents + as_retriever(k=10)
-adapters/prompts.py  intent_prompt, greeting_prompt, rag_prompt
-core/rag_pipeline.py get_llm (cache global), classify_input, run_rag
+core/intencao.py     e_saudacao() — sem imports, sem LLM
+core/rag_pipeline.py get_llm (cache global), run_rag
 core/conversation.py generate_response — usada apenas pelo Gradio
+adapters/splitter.py RecursiveCharacterTextSplitter (1000/200)
+adapters/embeddings.py  HuggingFaceEmbeddings, modelo multilíngue
+adapters/vector_store.py FAISS.from_documents + as_retriever(k=10)
+adapters/prompts.py  greeting_prompt, rag_prompt
+adapters/respostas.py RESPOSTA_SEM_CONTEXTO, sem_contexto() — sem imports
 main.py              setup_system() → {"servicos": retriever}
 ```
+
+Os dois módulos "sem imports" (`intencao.py`, `respostas.py`) são deliberados: são a
+lógica que o `api/` precisa consultar, e mantê-los livres de LangChain é o que permite
+testá-los — e testar quem os usa — sem baixar o modelo de embeddings no CI.
 
 ## Ciclo de vida de uma mensagem
 

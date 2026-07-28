@@ -110,9 +110,8 @@ def get_db():
     finally: db.close()
 ```
 
-`api/dependencies/dependencies.py::get_session` é uma cópia funcionalmente idêntica.
-As rotas de webhook usam `get_db`; `/messages/receive` usa `get_session`. Duplicação
-sem propósito — consolidar em uma só.
+Todas as rotas usam `get_db`. Existia uma cópia idêntica chamada `get_session` em
+`api/dependencies/dependencies.py`, removida — esse módulo agora só abriga `exigir_token`.
 
 ## Migrações
 

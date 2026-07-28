@@ -4,8 +4,9 @@ from dotenv import load_dotenv
 from langchain_core.runnables import Runnable, RunnablePassthrough
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.output_parsers import StrOutputParser 
-from langchain_groq import ChatGroq 
-from app.adapters.prompts import *
+from langchain_groq import ChatGroq
+from app.adapters.prompts import greeting_prompt, rag_prompt
+from app.core.intencao import e_saudacao
 
 load_dotenv()
 
@@ -33,11 +34,6 @@ def get_llm() -> ChatGroq:
     CACHED_LLM = llm
     return CACHED_LLM
 
-def classify_input(llm, text: str) -> str:
-    chain = intent_prompt | llm | StrOutputParser()
-    result = chain.invoke({"input": text})
-    return result.strip().lower()
-
 def greeting_response(llm) -> str:
     chain = greeting_prompt | llm | StrOutputParser()
     return chain.invoke({}).strip()
@@ -61,13 +57,9 @@ def run_rag(retriever: BaseRetriever, question: str) -> str:
     if not question or not question.strip():
         return "Digite uma pergunta válida."
 
-    llm = get_llm()
-    
-    intent = classify_input(llm, question)
+    # Saudacao resolvida localmente: antes isto custava uma chamada de LLM so
+    # para classificar a intencao, em toda mensagem.
+    if e_saudacao(question):
+        return greeting_response(get_llm())
 
-    if "greeting" in intent: 
-        return greeting_response(llm)
-
-    chain = build_rag_chain(retriever)
-
-    return chain.invoke(question)
+    return build_rag_chain(retriever).invoke(question)
