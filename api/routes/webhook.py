@@ -26,12 +26,19 @@ def send_text(number: str, text: str):
 def send_image(number: str, image_url: str, caption: str = ""):
     url = f"{EVOLUTION_URL}/message/sendMedia/{INSTANCE}"
     
+    mimetype = "image/jpeg" if "image/jpeg" in image_url else "image/png"
+    filename = "imagem.jpeg" if mimetype == "image/jpeg" else "imagem.png"
+    
+    media_data = image_url
+    if "," in media_data:
+        media_data = media_data.split(",")[1]
+    
     payload = {
         "number": number,
         "mediatype": "image",
-        "mimetype": "image/png",  
-        "fileName": "imagem.png", 
-        "media": image_url,
+        "mimetype": mimetype,  
+        "fileName": filename, 
+        "media": media_data,
         "caption": caption
     }
       

@@ -53,6 +53,9 @@ def handle_dynamic_menu(user, choice: str, nlp_service, db) -> ChatResponse:
         user.state = next_state
         return build_response(TEXTS[next_state]["text"], image_key=image_key, db=db)
 
+    elif "answer" in option_config:
+        return build_response(option_config["answer"], image_key=image_key, db=db)
+
     elif "query" in option_config:
         query = option_config["query"]
 
