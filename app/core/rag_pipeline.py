@@ -9,7 +9,7 @@ from app.adapters.prompts import *
 
 load_dotenv()
 
-MODEL_NAME = "llama-3.3-70b-versatile" 
+MODEL_NAME = "qwen/qwen3.8-27b" 
 
 CACHED_LLM = None
 
