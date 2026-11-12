@@ -1,5 +1,4 @@
 import logging
-import mimetypes
 import os
 
 import requests
@@ -39,17 +38,20 @@ def send_text(number: str, text: str) -> bool:
 
 def send_image(number: str, image_url: str, caption: str = "") -> bool:
     url = f"{EVOLUTION_URL}/message/sendMedia/{INSTANCE}"
-
-    # O mimetype vinha fixo em image/png enquanto a imagem configurada e .jpeg.
-    mimetype = mimetypes.guess_type(image_url)[0] or "image/jpeg"
-    extensao = mimetypes.guess_extension(mimetype) or ".jpg"
-
+    
+    mimetype = "image/jpeg" if "image/jpeg" in image_url else "image/png"
+    filename = "imagem.jpeg" if mimetype == "image/jpeg" else "imagem.png"
+    
+    media_data = image_url
+    if "," in media_data:
+        media_data = media_data.split(",")[1]
+    
     payload = {
         "number": number,
         "mediatype": "image",
-        "mimetype": mimetype,
-        "fileName": f"imagem{extensao}",
-        "media": image_url,
+        "mimetype": mimetype,  
+        "fileName": filename, 
+        "media": media_data,
         "caption": caption
     }
 
